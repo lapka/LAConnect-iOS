@@ -1,0 +1,3 @@
+[submodule "Airlift"]
+	path = Airlift
+	url = git@github.com:lapka/Airlift.git
