@@ -16,6 +16,7 @@
 @interface LAStartMessage : LAMessage
 @property int deviceID;
 @property int batteryLevel;
+- (float)batteryLevelInVolts;
 @end
 
 

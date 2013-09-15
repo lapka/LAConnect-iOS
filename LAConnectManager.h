@@ -21,11 +21,13 @@ typedef enum {
 } LAConnectManagerState;
 
 
-@interface LAConnectManager : NSObject
+@interface LAConnectManager : NSObject <AirListenerDelegate, LASesionDelegate>
 
 @property LAConnectManagerState state;
 @property (strong) LASession *session;
 @property (strong) LAMeasure *measure;
+
++ (LAConnectManager *)sharedManager;
 
 - (void)turnOn;
 - (void)turnOff;

@@ -9,3 +9,4 @@
 #include "LAMeasure.h"
 #include "LASession.h"
 #include "LAMessage.h"
+#include "LAError.h"

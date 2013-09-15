@@ -6,19 +6,14 @@
 #import <Foundation/Foundation.h>
 #import "LAMeasure.h"
 #import "LAMessage.h"
-
-
-typedef enum {
-	LASessionErrorNotEnoughPressureToStartMeasure,
-	LASessionErrorNotEnoughPressureToFinishMeasure
-} LASessionError;
+#import "LAError.h"
 
 
 @protocol LASesionDelegate <NSObject>
 
 - (void)sessionDidStart;
 - (void)sessionDidFinishWithMeasure:(LAMeasure *)measure;
-- (void)sessionDidFinishWithError:(LASessionError)error;
+- (void)sessionDidFinishWithError:(LAError *)error;
 - (void)sessionDidUpdate;
 
 @end
