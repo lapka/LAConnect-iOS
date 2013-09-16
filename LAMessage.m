@@ -15,7 +15,9 @@
 #define pressure_bits_data_index 20
 #define alcohol_bits_data_index 8
 
+#define word8_length   8
 #define word16_length 16
+#define word32_length 32
 
 @implementation LAMessage
 
@@ -37,14 +39,14 @@
 		
 		BIT_ARRAY *data = [airMessage data];
 		
-		BIT_ARRAY* device_id_bits = bit_array_create(word16_length);
-		BIT_ARRAY* battery_level_bits = bit_array_create(word16_length);
+		BIT_ARRAY* device_id_bits = bit_array_create(word32_length);
+		BIT_ARRAY* battery_level_bits = bit_array_create(word8_length);
 		
 		bit_array_copy(device_id_bits, 0, data, device_id_bits_data_index, device_id_bits_count);
 		bit_array_copy(battery_level_bits, 0, data, battery_level_bits_data_index, battery_level_bits_count);
 		
-		_deviceID = bit_array_get_word16(device_id_bits, 0);
-		_batteryLevel = bit_array_get_word16(battery_level_bits, 0);
+		_deviceID = bit_array_get_word32(device_id_bits, 0);
+		_batteryLevel = bit_array_get_word8(battery_level_bits, 0);
 		
 	}
 	return self;

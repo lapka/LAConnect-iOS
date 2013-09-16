@@ -14,7 +14,9 @@
 - (void)sessionDidStart;
 - (void)sessionDidFinishWithMeasure:(LAMeasure *)measure;
 - (void)sessionDidFinishWithError:(LAError *)error;
-- (void)sessionDidUpdate;
+
+- (void)sessionDidUpdatePressureAndAlcohol;
+- (void)sessionDidUpdateDuration;
 
 @end
 
@@ -27,7 +29,11 @@
 @property float duration;
 @property NSObject <LASesionDelegate> *delegate;
 
+// flags
+@property (readonly) BOOL pressureGotToAcceptableRange;
+
 - (id)initWithStartMessage:(LAStartMessage *)startMessage;
 - (void)updateWithMeasureMessage:(LAMeasureMessage *)measureMessage;
+- (void)start;
 
 @end
