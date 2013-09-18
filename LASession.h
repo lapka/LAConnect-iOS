@@ -35,5 +35,6 @@
 - (id)initWithStartMessage:(LAStartMessage *)startMessage;
 - (void)updateWithMeasureMessage:(LAMeasureMessage *)measureMessage;
 - (void)start;
+- (void)stop;
 
 @end

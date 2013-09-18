@@ -46,6 +46,13 @@
 }
 
 
+- (void)stop {
+	NSLog(@"LASession stop");
+	
+	[self invalidateTimers];
+}
+
+
 - (void)updateWithMeasureMessage:(LAMeasureMessage *)measureMessage {
 	_pressure = measureMessage.pressure;
 	_alcohol = measureMessage.alcohol;

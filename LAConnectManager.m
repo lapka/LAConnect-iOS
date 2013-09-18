@@ -111,6 +111,19 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 		return YES;
 	}
 	
+	// measure -> off
+	if (fromState == LAConnectManagerStateMeasure && toState == LAConnectManagerStateOff) {
+		_state = toState;
+		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
+		
+		[_airListener stopListen];
+		[_session stop];
+		self.session = nil;
+		
+		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateState object:nil];
+		return YES;
+	}
+	
 	NSLog(@"Warning: LAConnectManager can't update state from '%@' to '%@'", [self stateToString:fromState], [self stateToString:toState]);
 	return NO;
 }
