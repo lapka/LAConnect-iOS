@@ -47,7 +47,6 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 	if ((self = [super init])) {
 		
 		_airListener = [[AirListener alloc] initWithMarker:0xD391];
-		_airListener.debugMode = YES;
 		_airListener.delegate = self;
 		
 	}
@@ -70,7 +69,6 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 		_state = toState;
 		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
 		
-		[_airListener setInverseMarker:YES];
 		[_airListener startListen];
 		
 		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateState object:nil];
@@ -92,8 +90,6 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 	if (fromState == LAConnectManagerStateReady && toState == LAConnectManagerStateMeasure) {
 		_state = toState;
 		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
-		
-		[_airListener setInverseMarker:NO];
 		
 		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateState object:nil];
 		return YES;
@@ -186,6 +182,16 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 }
 
 
+- (void)sessionDidRecieveDeviceID {
+	printf("\nLAConnectManager sessionDidRecieveDeviceID: %d\n", [_session deviceID]);
+}
+
+
+- (void)sessionDidRecieveBatteryLevel {
+	printf("\nLAConnectManager sessionDidRecieveBatteryLevel: %0.1f\n", [_session batteryLevel]);
+}
+
+
 - (void)sessionDidFinishWithMeasure:(LAMeasure *)measure {
 	NSLog(@"LAConnectManager sessionDidFinishWithMeasure");
 	
@@ -210,25 +216,23 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 #pragma mark - AirListenerDelegate
 
 
-- (void)airListener:(AirListener *)airListener didReceiveMessage:(AirMessage *)message {
+- (void)airListener:(AirListener *)airListener didReceiveMessage:(AirMessage *)airMessage {
 	
 	if (self.state == LAConnectManagerStateReady) {
-		if (!message.markerIsInverse) return;
 		
-		LAStartMessage *startMessage = [[LAStartMessage alloc] initWithAirMessage:message];
-		self.session = [[LASession alloc] initWithStartMessage:startMessage];
+		self.session = [LASession new];
 		_session.delegate = self;
 		[_session start];
-		
 		[self updateWithState:LAConnectManagerStateMeasure];
+		
+		LAMessage *message = [[LAMessage alloc] initWithAirMessage:airMessage];
+		[_session updateWithMessage:message];
 	}
 	
 	if (self.state == LAConnectManagerStateMeasure) {
-		if (message.markerIsInverse) return;
-		if (!message.isIntegral) return;
 		
-		LAMeasureMessage *measureMessage = [[LAMeasureMessage alloc] initWithAirMessage:message];
-		[_session updateWithMeasureMessage:measureMessage];
+		LAMessage *message = [[LAMessage alloc] initWithAirMessage:airMessage];
+		[_session updateWithMessage:message];
 	}
 }
 

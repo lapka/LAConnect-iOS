@@ -16,6 +16,8 @@
 - (void)sessionDidFinishWithError:(LAError *)error;
 
 - (void)sessionDidUpdatePressureAndAlcohol;
+- (void)sessionDidRecieveDeviceID;
+- (void)sessionDidRecieveBatteryLevel;
 - (void)sessionDidUpdateDuration;
 
 @end
@@ -24,16 +26,16 @@
 @interface LASession : NSObject
 
 @property int deviceID;
-@property float pressure;
 @property float alcohol;
+@property float pressure;
+@property float batteryLevel;
 @property float duration;
 @property NSObject <LASesionDelegate> *delegate;
 
 // flags
 @property (readonly) BOOL pressureGotToAcceptableRange;
 
-- (id)initWithStartMessage:(LAStartMessage *)startMessage;
-- (void)updateWithMeasureMessage:(LAMeasureMessage *)measureMessage;
+- (void)updateWithMessage:(LAMessage *)message;
 - (void)start;
 - (void)stop;
 

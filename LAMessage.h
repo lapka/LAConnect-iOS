@@ -7,20 +7,22 @@
 #import "Airlift.h"
 
 
+typedef enum {
+	LAMessageInfoByteTypeOne,
+	LAMessageInfoByteTypeTwo,
+	LAMessageInfoByteTypeThree
+} LAMessageInfoByteType;
+
+
 @interface LAMessage : NSObject
+
 @property NSDate *time;
-- (id)initWithAirMessage:(AirMessage *)airMessage;
-@end
-
-
-@interface LAStartMessage : LAMessage
-@property int deviceID;
-@property int batteryLevel;
-- (float)batteryLevelInVolts;
-@end
-
-
-@interface LAMeasureMessage : LAMessage
 @property float pressure;
 @property float alcohol;
+
+@property BIT_ARRAY *infoByte;
+@property LAMessageInfoByteType infoByteType;
+
+- (id)initWithAirMessage:(AirMessage *)airMessage;
+
 @end
