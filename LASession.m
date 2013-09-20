@@ -4,9 +4,10 @@
 //
 
 #import "LASession.h"
+#import "LASessionEvent.h"
 
-#define minAcceptablePressure 128.0
-#define maxAcceptablePressure 256.0
+#define minAcceptablePressure 3.0
+#define maxAcceptablePressure 6.0
 #define initialPressureCheckTime 3.0
 #define finishTime 7.0
 
@@ -21,6 +22,8 @@
 #define byte_length    8
 #define word8_length   8
 #define word32_length 32
+
+NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidRecieveSessionEvent";
 
 
 @interface LASession ()
@@ -90,7 +93,7 @@
 	
 	// Check pressure
 	
-	BOOL pressureIsInAcceptableRange = (_pressure > minAcceptablePressure) && (_pressure < maxAcceptablePressure);
+	BOOL pressureIsInAcceptableRange = (_pressure >= minAcceptablePressure) && (_pressure <= maxAcceptablePressure);
 	
 	if (!_pressureGotToAcceptableRange && pressureIsInAcceptableRange) {
 		_pressureGotToAcceptableRange = YES;
@@ -101,6 +104,10 @@
 		NSLog(@"Warning: LASession: Pressure goes out of acceptable range, here will be the error");
 //		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeNotEnoughPressureToFinishMeasure userInfo:nil];
 //		[self finishWithError:error];
+		
+		NSString *description = [NSString stringWithFormat:@"Error: %@ pressure", (_pressure < minAcceptablePressure) ? @"small" : @"high"];
+		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
+		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	}
 }
 
@@ -118,6 +125,10 @@
 		NSLog(@"Warning: LASession: Pressure doesn't get to acceptable range in time (%f), here will be the error", _duration);
 //		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeNotEnoughPressureToStartMeasure userInfo:nil];
 //		[self finishWithError:error];
+		
+		NSString *description = [NSString stringWithFormat:@"Error: %@ pressure", (_pressure < minAcceptablePressure) ? @"small" : @"high"];
+		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
+		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	}
 }
 

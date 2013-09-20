@@ -4,6 +4,7 @@
 //
 
 #import "LAConnectManager.h"
+#import "LASessionEvent.h"
 #import "Airlift.h"
 
 #define respiteTime 5.0
@@ -169,26 +170,40 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 - (void)sessionDidStart {
 	NSLog(@"LAConnectManager sessionDidStart");
 	
+	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Session started" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
 
 - (void)sessionDidUpdateDuration {
-	printf("\nLAConnectManager sessionDidUpdateDuration: %0.1f\n", [_session duration]);
+	printf("\nLAConnectManager sessionDidUpdateDuration: %0.1f\n", _session.duration);
 }
 
 
 - (void)sessionDidUpdatePressureAndAlcohol {
-	printf("\nLAConnectManager sessionDidUpdatePressure: %.0f AndAlcohol: %.0f (duration %.2f)\n", [_session pressure], [_session alcohol], [_session duration]);
+	printf("\nLAConnectManager sessionDidUpdatePressure: %.0f AndAlcohol: %.0f (duration %.2f)\n", [_session pressure], [_session alcohol], _session.duration);
+	
+	NSString *description = [NSString stringWithFormat:@"Alco: %.0f, Pressure: %.0f", _session.alcohol, _session.pressure];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
 
 - (void)sessionDidRecieveDeviceID {
 	printf("\nLAConnectManager sessionDidRecieveDeviceID: %d\n", [_session deviceID]);
+	
+	NSString *description = [NSString stringWithFormat:@"Device ID: %df", _session.deviceID];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
 
 - (void)sessionDidRecieveBatteryLevel {
 	printf("\nLAConnectManager sessionDidRecieveBatteryLevel: %0.1f\n", [_session batteryLevel]);
+	
+	NSString *description = [NSString stringWithFormat:@"Battery: %.1fV", _session.batteryLevel];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
 
@@ -199,6 +214,13 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishMeasureWithMeasure object:measure];
 	[self updateWithState:LAConnectManagerStateRespite];
 	self.session = nil;
+	
+	NSString *description = [NSString stringWithFormat:@"Alcohol: %.0f", _session.alcohol];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	LASessionEvent *event2 = [LASessionEvent eventWithDescription:@"Session finished" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event2];
 }
 
 

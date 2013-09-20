@@ -10,3 +10,4 @@
 #include "LASession.h"
 #include "LAMessage.h"
 #include "LAError.h"
+#include "LASessionEvent.h"

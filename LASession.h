@@ -8,6 +8,8 @@
 #import "LAMessage.h"
 #import "LAError.h"
 
+extern NSString *const ConnectManagerDidRecieveSessionEvent;
+
 
 @protocol LASesionDelegate <NSObject>
 
