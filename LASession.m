@@ -70,6 +70,8 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	[self scheduleTimers];
 	self.startTime = [NSDate date];
+	
+	[self.delegate sessionDidStart];
 }
 
 

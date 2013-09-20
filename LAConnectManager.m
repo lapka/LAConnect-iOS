@@ -177,13 +177,16 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 
 - (void)sessionDidUpdateDuration {
 	printf("\nLAConnectManager sessionDidUpdateDuration: %0.1f\n", _session.duration);
+	
+	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Timer" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
 
 - (void)sessionDidUpdatePressureAndAlcohol {
 	printf("\nLAConnectManager sessionDidUpdatePressure: %.0f AndAlcohol: %.0f (duration %.2f)\n", [_session pressure], [_session alcohol], _session.duration);
 	
-	NSString *description = [NSString stringWithFormat:@"Alco: %.0f, Pressure: %.0f", _session.alcohol, _session.pressure];
+	NSString *description = [NSString stringWithFormat:@"Alcohol: %.0f, Pressure: %.0f", _session.alcohol, _session.pressure];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
@@ -210,17 +213,19 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 - (void)sessionDidFinishWithMeasure:(LAMeasure *)measure {
 	NSLog(@"LAConnectManager sessionDidFinishWithMeasure");
 	
-	self.measure = measure;
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishMeasureWithMeasure object:measure];
-	[self updateWithState:LAConnectManagerStateRespite];
-	self.session = nil;
+	LASessionEvent *event2 = [LASessionEvent eventWithDescription:@"Session finished\n--------------------------------\n" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event2];
 	
-	NSString *description = [NSString stringWithFormat:@"Alcohol: %.0f", _session.alcohol];
+	NSString *description = [NSString stringWithFormat:@"Your alcohol: %.0f", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	
-	LASessionEvent *event2 = [LASessionEvent eventWithDescription:@"Session finished" time:_session.duration];
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event2];
+	self.measure = measure;
+	
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishMeasureWithMeasure object:measure];
+	[self updateWithState:LAConnectManagerStateRespite];
+	
+	self.session = nil;
 }
 
 
@@ -242,10 +247,12 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 	
 	if (self.state == LAConnectManagerStateReady) {
 		
+		// refactor: update state should be after session creation (or in)
+		[self updateWithState:LAConnectManagerStateMeasure];
+		
 		self.session = [LASession new];
 		_session.delegate = self;
 		[_session start];
-		[self updateWithState:LAConnectManagerStateMeasure];
 		
 		LAMessage *message = [[LAMessage alloc] initWithAirMessage:airMessage];
 		[_session updateWithMessage:message];
