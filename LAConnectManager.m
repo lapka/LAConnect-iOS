@@ -178,8 +178,8 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 - (void)sessionDidUpdateDuration {
 	printf("\nLAConnectManager sessionDidUpdateDuration: %0.1f\n", _session.duration);
 	
-	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Timer" time:_session.duration];
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+//	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Timer" time:_session.duration];
+//	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
 

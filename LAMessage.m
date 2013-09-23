@@ -6,13 +6,14 @@
 #import "LAMessage.h"
 
 #define info_bits_count 8
-#define pressure_bits_count 10
+#define pressure_bits_count 4
 #define alcohol_bits_count 12
 
 #define info_bits_data_index 24
 #define pressure_bits_data_index 20
 #define alcohol_bits_data_index 8
 
+#define word8_length 8
 #define word16_length 16
 
 
@@ -24,13 +25,13 @@
 		
 		BIT_ARRAY *data = [airMessage data];
 		
-		BIT_ARRAY* pressure_bits = bit_array_create(word16_length);
+		BIT_ARRAY* pressure_bits = bit_array_create(word8_length);
 		BIT_ARRAY* alcohol_bits = bit_array_create(word16_length);
 		
 		bit_array_copy(pressure_bits, 0, data, pressure_bits_data_index, pressure_bits_count);
 		bit_array_copy(alcohol_bits, 0, data, alcohol_bits_data_index, alcohol_bits_count);
 		
-		_pressure = bit_array_get_word16(pressure_bits, 0);
+		_pressure = bit_array_get_word8(pressure_bits, 0);
 		_alcohol = bit_array_get_word16(alcohol_bits, 0);
 		
 		bit_array_free(pressure_bits);

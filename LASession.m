@@ -9,7 +9,8 @@
 #define minAcceptablePressure 3.0
 #define maxAcceptablePressure 6.0
 #define initialPressureCheckTime 3.0
-#define finishTime 7.0
+#define missedMessageDelay 0.6
+#define finishTime 10.0
 
 #define battery_level_info_byte_start_index 4
 #define battery_level_bits_count 4
@@ -30,6 +31,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 @property (strong) NSTimer *everySecondTimer;
 @property (strong) NSTimer *initialPressureCheckTimer;
 @property (strong) NSTimer *finishTimer;
+@property (strong) NSTimer *missedMessageTimer;
 @property (strong) NSDate *startTime;
 
 @property BIT_ARRAY *device_id_bits;
@@ -107,10 +109,21 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 //		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeNotEnoughPressureToFinishMeasure userInfo:nil];
 //		[self finishWithError:error];
 		
-		NSString *description = [NSString stringWithFormat:@"Error: %@ pressure", (_pressure < minAcceptablePressure) ? @"small" : @"high"];
-		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
-		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+//		NSString *description = [NSString stringWithFormat:@"Error: %@ pressure", (_pressure < minAcceptablePressure) ? @"small" : @"high"];
+//		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
+//		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	}
+	
+	[self.missedMessageTimer invalidate];
+	self.missedMessageTimer = [NSTimer scheduledTimerWithTimeInterval:missedMessageDelay target:self selector:@selector(handleMissedMessage) userInfo:nil repeats:NO];
+}
+							   
+- (void)handleMissedMessage {
+	
+	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Missed message" time:_duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	self.missedMessageTimer = [NSTimer scheduledTimerWithTimeInterval:missedMessageDelay target:self selector:@selector(handleMissedMessage) userInfo:nil repeats:NO];
 }
 
 
@@ -128,9 +141,9 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 //		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeNotEnoughPressureToStartMeasure userInfo:nil];
 //		[self finishWithError:error];
 		
-		NSString *description = [NSString stringWithFormat:@"Error: %@ pressure", (_pressure < minAcceptablePressure) ? @"small" : @"high"];
-		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
-		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+//		NSString *description = [NSString stringWithFormat:@"Error: %@ pressure", (_pressure < minAcceptablePressure) ? @"small" : @"high"];
+//		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
+//		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	}
 }
 
@@ -168,10 +181,12 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	[self.everySecondTimer invalidate];
 	[self.initialPressureCheckTimer invalidate];
 	[self.finishTimer invalidate];
+	[self.missedMessageTimer invalidate];
 	
 	self.everySecondTimer = nil;
 	self.initialPressureCheckTimer = nil;
 	self.finishTimer = nil;
+	self.missedMessageTimer = nil;
 }
 
 
