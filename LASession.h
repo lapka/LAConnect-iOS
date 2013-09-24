@@ -5,10 +5,17 @@
 
 #import <Foundation/Foundation.h>
 #import "LAMeasure.h"
-#import "LAMessage.h"
 #import "LAError.h"
+#import "bit_array.h"
 
 extern NSString *const ConnectManagerDidRecieveSessionEvent;
+
+
+typedef enum {
+	LAAlcoholPart_high,
+	LAAlcoholPart_middle,
+	LAAlcoholPart_low
+} LAAlcoholPartType;
 
 
 @protocol LASesionDelegate <NSObject>
@@ -17,27 +24,24 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 - (void)sessionDidFinishWithMeasure:(LAMeasure *)measure;
 - (void)sessionDidFinishWithError:(LAError *)error;
 
-- (void)sessionDidUpdatePressureAndAlcohol;
-- (void)sessionDidRecieveDeviceID;
-- (void)sessionDidRecieveBatteryLevel;
-- (void)sessionDidUpdateDuration;
+- (void)sessionDidUpdatePressure;
+- (void)sessionDidUpdateAlcohol;
 
 @end
 
 
 @interface LASession : NSObject
 
-@property int deviceID;
 @property float alcohol;
 @property float pressure;
-@property float batteryLevel;
 @property float duration;
 @property NSObject <LASesionDelegate> *delegate;
 
 // flags
 @property (readonly) BOOL pressureGotToAcceptableRange;
 
-- (void)updateWithMessage:(LAMessage *)message;
+- (void)updateWithPressure:(float)pressure;
+- (void)updateWithAlcoholPartValue:(uint8_t)alcoholPartValue forPartType:(LAAlcoholPartType)alcoholPartType;
 - (void)start;
 - (void)stop;
 

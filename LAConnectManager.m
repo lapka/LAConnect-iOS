@@ -18,6 +18,7 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 @interface LAConnectManager ()
 @property (strong) AirListener *airListener;
 @property (strong) NSTimer *respiteTimer;
+@property LAAlcoholPartType expectedAlcoholPartType;
 @end
 
 
@@ -47,7 +48,7 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 - (id)init {
 	if ((self = [super init])) {
 		
-		_airListener = [[AirListener alloc] initWithMarker:0xD391];
+		_airListener = [AirListener new];
 		_airListener.delegate = self;
 		
 	}
@@ -87,17 +88,32 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 		return YES;
 	}
 	
-	// ready -> measure
-	if (fromState == LAConnectManagerStateReady && toState == LAConnectManagerStateMeasure) {
+	// ready -> measure pressure
+	if (fromState == LAConnectManagerStateReady && toState == LAConnectManagerStateMeasurePressure) {
 		_state = toState;
 		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
+		
+		self.session = [LASession new];
+		_session.delegate = self;
+		[_session start];
 		
 		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateState object:nil];
 		return YES;
 	}
 	
-	// measure -> respite
-	if (fromState == LAConnectManagerStateMeasure && toState == LAConnectManagerStateRespite) {
+	// measure pressure -> measure alcohol
+	if (fromState == LAConnectManagerStateMeasurePressure && toState == LAConnectManagerStateMeasureAlcohol) {
+		_state = toState;
+		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
+		
+		_expectedAlcoholPartType = LAAlcoholPart_high;
+		
+		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateState object:nil];
+		return YES;
+	}
+	
+	// measure alcohol -> respite
+	if (fromState == LAConnectManagerStateMeasureAlcohol && toState == LAConnectManagerStateRespite) {
 		_state = toState;
 		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
 		
@@ -108,8 +124,21 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 		return YES;
 	}
 	
-	// measure -> off
-	if (fromState == LAConnectManagerStateMeasure && toState == LAConnectManagerStateOff) {
+	// measure pressure -> off
+	if (fromState == LAConnectManagerStateMeasurePressure && toState == LAConnectManagerStateOff) {
+		_state = toState;
+		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
+		
+		[_airListener stopListen];
+		[_session stop];
+		self.session = nil;
+		
+		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateState object:nil];
+		return YES;
+	}
+	
+	// measure alcohol -> off
+	if (fromState == LAConnectManagerStateMeasureAlcohol && toState == LAConnectManagerStateOff) {
 		_state = toState;
 		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
 		
@@ -158,7 +187,7 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 
 - (void)startMeasure {
 	NSLog(@"LAConnectManager startMeasure");
-	[self updateWithState:LAConnectManagerStateMeasure];
+	[self updateWithState:LAConnectManagerStateMeasurePressure];
 }
 
 
@@ -183,28 +212,19 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 }
 
 
-- (void)sessionDidUpdatePressureAndAlcohol {
-	printf("\nLAConnectManager sessionDidUpdatePressure: %.0f AndAlcohol: %.0f (duration %.2f)\n", [_session pressure], [_session alcohol], _session.duration);
+- (void)sessionDidUpdatePressure {
+	printf("\nLAConnectManager sessionDidUpdatePressure: %.0f\n", [_session pressure]);
 	
-	NSString *description = [NSString stringWithFormat:@"Alcohol: %.0f, Pressure: %.0f", _session.alcohol, _session.pressure];
+	NSString *description = [NSString stringWithFormat:@"Pressure: %.0f", _session.pressure];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
 
-- (void)sessionDidRecieveDeviceID {
-	printf("\nLAConnectManager sessionDidRecieveDeviceID: %d\n", [_session deviceID]);
+- (void)sessionDidUpdateAlcohol {
+	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.0f\n", [_session alcohol]);
 	
-	NSString *description = [NSString stringWithFormat:@"Device ID: %df", _session.deviceID];
-	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-}
-
-
-- (void)sessionDidRecieveBatteryLevel {
-	printf("\nLAConnectManager sessionDidRecieveBatteryLevel: %0.1f\n", [_session batteryLevel]);
-	
-	NSString *description = [NSString stringWithFormat:@"Battery: %.1fV", _session.batteryLevel];
+	NSString *description = [NSString stringWithFormat:@"Alcohol: %.0f", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
@@ -243,31 +263,46 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 #pragma mark - AirListenerDelegate
 
 
-- (void)airListener:(AirListener *)airListener didReceiveMessage:(AirMessage *)airMessage {
+- (void)airListenerDidReceiveMessage:(AirMessage *)message {
 	
 	if (self.state == LAConnectManagerStateReady) {
-		
-		// refactor: update state should be after session creation (or in)
-		[self updateWithState:LAConnectManagerStateMeasure];
-		
-		self.session = [LASession new];
-		_session.delegate = self;
-		[_session start];
-		
-		LAMessage *message = [[LAMessage alloc] initWithAirMessage:airMessage];
-		[_session updateWithMessage:message];
+		[self updateWithState:LAConnectManagerStateMeasurePressure];
 	}
 	
-	if (self.state == LAConnectManagerStateMeasure) {
+	if (self.state == LAConnectManagerStateMeasurePressure) {
+		float pressure = message.value;
+		[_session updateWithPressure:pressure];
+	}
+	
+	if (self.state == LAConnectManagerStateMeasureAlcohol) {
 		
-		LAMessage *message = [[LAMessage alloc] initWithAirMessage:airMessage];
-		[_session updateWithMessage:message];
+		NSString *description = [NSString stringWithFormat:@"Alcohol part #%d: %d", _expectedAlcoholPartType, message.value];
+		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+		
+		uint8_t alcoholPartValue = message.value;
+		[_session updateWithAlcoholPartValue:alcoholPartValue forPartType:_expectedAlcoholPartType];
+		_expectedAlcoholPartType = [self nextAlcoholPartTypeForPartType:_expectedAlcoholPartType];
 	}
 }
 
 
-- (void)airListenerDidLostMessage:(AirListener *)airListener {
+- (void)airListenerDidReceiveControlSignal:(AirMessage *)message {
 	
+	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Control signal 1" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	if (self.state == LAConnectManagerStateMeasurePressure) {
+		if (message.value == AirWordValue_ControlSignal_1) {
+			[self updateWithState:LAConnectManagerStateMeasureAlcohol];
+		}
+	}
+	
+	if (self.state == LAConnectManagerStateMeasureAlcohol) {
+		if (message.value == AirWordValue_ControlSignal_1) {
+			_expectedAlcoholPartType = LAAlcoholPart_high;
+		}
+	}
 }
 
 
@@ -287,8 +322,12 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 			return @"ready";
 			break;
 			
-		case LAConnectManagerStateMeasure:
-			return @"measure";
+		case LAConnectManagerStateMeasurePressure:
+			return @"measure pressure";
+			break;
+			
+		case LAConnectManagerStateMeasureAlcohol:
+			return @"measure alcohol";
 			break;
 			
 		case LAConnectManagerStateRespite:
@@ -296,6 +335,25 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 			break;
 			
 		default:
+			break;
+	}
+}
+
+
+- (LAAlcoholPartType)nextAlcoholPartTypeForPartType:(LAAlcoholPartType)partType {
+	
+	switch (partType) {
+			
+		case LAAlcoholPart_high:
+			return LAAlcoholPart_middle;
+			break;
+			
+		case LAAlcoholPart_middle:
+			return LAAlcoholPart_low;
+			break;
+			
+		case LAAlcoholPart_low:
+			return LAAlcoholPart_high;
 			break;
 	}
 }

@@ -6,6 +6,7 @@
 #import <Foundation/Foundation.h>
 #import "LASession.h"
 #import "LAMeasure.h"
+#import "Airlift.h"
 
 
 extern NSString *const ConnectManagerDidUpdateState;
@@ -16,7 +17,8 @@ extern NSString *const ConnectManagerDidFinishMeasureWithError;
 typedef enum {
 	LAConnectManagerStateOff,
 	LAConnectManagerStateReady,
-	LAConnectManagerStateMeasure,
+	LAConnectManagerStateMeasurePressure,
+	LAConnectManagerStateMeasureAlcohol,
 	LAConnectManagerStateRespite
 } LAConnectManagerState;
 

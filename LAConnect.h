@@ -8,6 +8,5 @@
 #include "LAConnectManager.h"
 #include "LAMeasure.h"
 #include "LASession.h"
-#include "LAMessage.h"
 #include "LAError.h"
 #include "LASessionEvent.h"
