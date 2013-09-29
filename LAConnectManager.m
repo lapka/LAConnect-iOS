@@ -16,7 +16,6 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 
 
 @interface LAConnectManager ()
-@property (strong) AirListener *airListener;
 @property (strong) NSTimer *respiteTimer;
 @property LAAlcoholPartType expectedAlcoholPartType;
 @end
@@ -289,18 +288,24 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 
 - (void)airListenerDidReceiveControlSignal:(AirMessage *)message {
 	
-	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Control signal 1" time:_session.duration];
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-	
 	if (self.state == LAConnectManagerStateMeasurePressure) {
 		if (message.value == AirWordValue_ControlSignal_1) {
+			
+			LASessionEvent *event = [LASessionEvent eventWithDescription:@"Control signal 1" time:_session.duration];
+			[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+			
 			[self updateWithState:LAConnectManagerStateMeasureAlcohol];
+			[_session restartMissedMessageTimer];
+		}
+		if (message.value == AirWordValue_Sync) {
+			
 		}
 	}
 	
 	if (self.state == LAConnectManagerStateMeasureAlcohol) {
 		if (message.value == AirWordValue_ControlSignal_1) {
 			_expectedAlcoholPartType = LAAlcoholPart_high;
+			[_session restartMissedMessageTimer];
 		}
 	}
 }
@@ -353,6 +358,9 @@ NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFin
 			break;
 			
 		case LAAlcoholPart_low:
+			return LAAlcoholPart_crc;
+			
+		case LAAlcoholPart_crc:
 			return LAAlcoholPart_high;
 			break;
 	}

@@ -25,6 +25,7 @@ typedef enum {
 
 @interface LAConnectManager : NSObject <AirListenerDelegate, LASesionDelegate>
 
+@property (strong) AirListener *airListener;
 @property (readonly) LAConnectManagerState state;
 @property (strong) LASession *session;
 @property (strong) LAMeasure *measure;

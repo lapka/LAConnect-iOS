@@ -14,7 +14,8 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 typedef enum {
 	LAAlcoholPart_high,
 	LAAlcoholPart_middle,
-	LAAlcoholPart_low
+	LAAlcoholPart_low,
+	LAAlcoholPart_crc
 } LAAlcoholPartType;
 
 
@@ -44,5 +45,7 @@ typedef enum {
 - (void)updateWithAlcoholPartValue:(uint8_t)alcoholPartValue forPartType:(LAAlcoholPartType)alcoholPartType;
 - (void)start;
 - (void)stop;
+
+- (void)restartMissedMessageTimer;
 
 @end

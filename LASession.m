@@ -9,7 +9,7 @@
 #define minAcceptablePressure 3.0
 #define maxAcceptablePressure 6.0
 #define initialPressureCheckTime 3.0
-#define missedMessageDelay 0.3
+#define missedMessageDelay 0.6
 #define finishTime 10.0
 
 #define battery_level_info_byte_start_index 4
@@ -34,10 +34,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 @property (strong) NSDate *startTime;
 
 @property BIT_ARRAY *alcohol_bits;
-@property BOOL alcoholGotHighByte;
-@property BOOL alcoholGotMiddleByte;
-@property BOOL alcoholGotLowByte;
-@property BOOL alcoholIsIntegral;
 @end
 
 
@@ -98,7 +94,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	}
 	
 	if (_pressureGotToAcceptableRange && !pressureIsInAcceptableRange) {
-		NSLog(@"Warning: LASession: Pressure goes out of acceptable range, here will be the error");
+//		NSLog(@"Warning: LASession: Pressure goes out of acceptable range, here will be the error");
 //		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeNotEnoughPressureToFinishMeasure userInfo:nil];
 //		[self finishWithError:error];
 		
@@ -113,7 +109,33 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithAlcoholPartValue:(uint8_t)alcoholPartValue forPartType:(LAAlcoholPartType)alcoholPartType {
 	[self restartMissedMessageTimer];
-	if (_alcoholIsIntegral) return;
+	
+	if (alcoholPartType == LAAlcoholPart_crc) {
+		
+		// check crc
+		
+		BIT_ARRAY *crc_bits = bit_array_create(4);
+		BIT_ARRAY *part_bits = bit_array_create(8);
+		
+		for (int i = 0; i < 3; i++) {
+			bit_array_copy(part_bits, 0, _alcohol_bits, i*4, 4);
+			uint8_t part = bit_array_get_word8(part_bits, 0);
+			bit_array_add(crc_bits, part);
+		}
+		
+		bit_array_copy(part_bits, 0, crc_bits, 0, 4);
+		uint8_t crc = bit_array_get_word8(part_bits, 0);
+		
+		bit_array_free(crc_bits);
+		bit_array_free(part_bits);
+		
+		if (crc == alcoholPartValue) {
+			_alcohol = bit_array_get_word16(_alcohol_bits, 0);
+			[self.delegate sessionDidUpdateAlcohol];
+			[self finish];
+		}
+		return;
+	}
 	
 	// convert part to bits
 	BIT_ARRAY *alcohol_part_bits = bit_array_create(word8_length);
@@ -123,10 +145,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	uint8_t alcohol_part_index = [self alcoholPartIndexByPartType:alcoholPartType];
 	bit_array_copy(_alcohol_bits, alcohol_part_index, alcohol_part_bits, 0, alcohol_part_bits_count);
 	bit_array_free(alcohol_part_bits);
-	
-	// check
-	[self gotAlcoholPartWithType:alcoholPartType];
-	[self checkAlcoholIntegrity];
 }
 
 
@@ -143,36 +161,10 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 			
 		case LAAlcoholPart_high:
 			return 8;
-			break;
-	}
-}
-
-
-- (void)gotAlcoholPartWithType:(LAAlcoholPartType)partType {
-	switch (partType) {
 			
-		case LAAlcoholPart_high:
-			_alcoholGotHighByte = YES;
+		case LAAlcoholPart_crc:
+			return 0;
 			break;
-			
-		case LAAlcoholPart_middle:
-			_alcoholGotMiddleByte = YES;
-			break;
-			
-		case LAAlcoholPart_low:
-			_alcoholGotLowByte = YES;
-			break;
-	}
-}
-
-
-- (void)checkAlcoholIntegrity {
-	
-	if (_alcoholGotLowByte && _alcoholGotLowByte && _alcoholGotHighByte) {
-		_alcohol = bit_array_get_word16(_alcohol_bits, 0);
-		_alcoholIsIntegral = YES;
-		[self.delegate sessionDidUpdateAlcohol];
-		[self finish];
 	}
 }
 
