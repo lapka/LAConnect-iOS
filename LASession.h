@@ -10,15 +10,6 @@
 
 extern NSString *const ConnectManagerDidRecieveSessionEvent;
 
-
-typedef enum {
-	LAAlcoholPart_high,
-	LAAlcoholPart_middle,
-	LAAlcoholPart_low,
-	LAAlcoholPart_crc
-} LAAlcoholPartType;
-
-
 @protocol LASesionDelegate <NSObject>
 
 - (void)sessionDidStart;
@@ -27,6 +18,9 @@ typedef enum {
 
 - (void)sessionDidUpdatePressure;
 - (void)sessionDidUpdateAlcohol;
+- (void)sessionDidUpdateDeviceID;
+- (void)sessionDidUpdateShortDeviceID;
+- (void)sessionDidUpdateBatteryLevel;
 
 @end
 
@@ -35,6 +29,9 @@ typedef enum {
 
 @property float alcohol;
 @property float pressure;
+@property int deviceID;
+@property int shortDeviceID;
+@property int batteryLevel;
 @property float duration;
 @property NSObject <LASesionDelegate> *delegate;
 
@@ -42,7 +39,10 @@ typedef enum {
 @property (readonly) BOOL pressureGotToAcceptableRange;
 
 - (void)updateWithPressure:(float)pressure;
-- (void)updateWithAlcoholPartValue:(uint8_t)alcoholPartValue forPartType:(LAAlcoholPartType)alcoholPartType;
+- (void)updateWithAlcohol:(float)alcohol;
+- (void)updateWithDeviceID:(int)deviceID;
+- (void)updateWithShortDeviceID:(int)shortDeviceID;
+- (void)updateWithBatteryLevel:(int)batteryLevel;
 - (void)start;
 - (void)stop;
 

@@ -9,7 +9,8 @@
 #define minAcceptablePressure 3.0
 #define maxAcceptablePressure 6.0
 #define initialPressureCheckTime 3.0
-#define missedMessageDelay 0.6
+#define missedMessageDelay 0.3
+#define maxAcceptableMissedMessagesInARow 10
 #define finishTime 10.0
 
 #define battery_level_info_byte_start_index 4
@@ -29,11 +30,11 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 @interface LASession ()
 @property (strong) NSTimer *everySecondTimer;
 @property (strong) NSTimer *initialPressureCheckTimer;
-@property (strong) NSTimer *finishTimer;
 @property (strong) NSTimer *missedMessageTimer;
 @property (strong) NSDate *startTime;
+@property BOOL needDoubleCheckAlcohol;
+@property int missedMessagesInARow;
 
-@property BIT_ARRAY *alcohol_bits;
 @end
 
 
@@ -48,7 +49,8 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		_pressure = 0;
 		_duration = 0;
 		
-		_alcohol_bits = bit_array_create(word16_length);
+		_needDoubleCheckAlcohol = NO;
+		_missedMessagesInARow = 0;
 	}
 	return self;
 }
@@ -56,7 +58,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)dealloc {
 	NSLog(@"LASession dealloc");
-	bit_array_free(_alcohol_bits);
 }
 
 
@@ -79,7 +80,9 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithPressure:(float)pressure {
 	
-	_duration = [[NSDate date] timeIntervalSinceDate:self.startTime];
+	[self updateDuration];
+	[self restartMissedMessageTimer];
+	_missedMessagesInARow = 0;
 	
 	_pressure = pressure;
 	[self.delegate sessionDidUpdatePressure];
@@ -90,7 +93,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	if (!_pressureGotToAcceptableRange && pressureIsInAcceptableRange) {
 		_pressureGotToAcceptableRange = YES;
-		NSLog(@"LASession pressureGotToAcceptableRange");
 	}
 	
 	if (_pressureGotToAcceptableRange && !pressureIsInAcceptableRange) {
@@ -102,75 +104,72 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 //		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
 //		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	}
-	
-	[self restartMissedMessageTimer];
 }
 
 
-- (void)updateWithAlcoholPartValue:(uint8_t)alcoholPartValue forPartType:(LAAlcoholPartType)alcoholPartType {
-	[self restartMissedMessageTimer];
+- (void)updateWithAlcohol:(float)alcohol {
 	
-	if (alcoholPartType == LAAlcoholPart_crc) {
-		
-		// check crc
-		
-		BIT_ARRAY *crc_bits = bit_array_create(4);
-		BIT_ARRAY *part_bits = bit_array_create(8);
-		
-		for (int i = 0; i < 3; i++) {
-			bit_array_copy(part_bits, 0, _alcohol_bits, i*4, 4);
-			uint8_t part = bit_array_get_word8(part_bits, 0);
-			bit_array_add(crc_bits, part);
-		}
-		
-		bit_array_copy(part_bits, 0, crc_bits, 0, 4);
-		uint8_t crc = bit_array_get_word8(part_bits, 0);
-		
-		bit_array_free(crc_bits);
-		bit_array_free(part_bits);
-		
-		if (crc == alcoholPartValue) {
-			_alcohol = bit_array_get_word16(_alcohol_bits, 0);
+	[self updateDuration];
+	[self restartMissedMessageTimer];
+	_missedMessagesInARow = 0;
+	
+	if (_needDoubleCheckAlcohol) {
+		if (alcohol == _alcohol) {
 			[self.delegate sessionDidUpdateAlcohol];
 			[self finish];
+			return;
 		}
-		return;
 	}
+		
+	_alcohol = alcohol;
 	
-	// convert part to bits
-	BIT_ARRAY *alcohol_part_bits = bit_array_create(word8_length);
-	bit_array_set_word8(alcohol_part_bits, 0, alcoholPartValue);
+	// refactor: this is just for debug, dont report this later
+	[self.delegate sessionDidUpdateAlcohol];
 	
-	// add part bits
-	uint8_t alcohol_part_index = [self alcoholPartIndexByPartType:alcoholPartType];
-	bit_array_copy(_alcohol_bits, alcohol_part_index, alcohol_part_bits, 0, alcohol_part_bits_count);
-	bit_array_free(alcohol_part_bits);
+	self.needDoubleCheckAlcohol = YES;
 }
 
 
-- (uint8_t)alcoholPartIndexByPartType:(LAAlcoholPartType)partType {
-	switch (partType) {
-			
-		case LAAlcoholPart_low:
-			return 0;
-			break;
-			
-		case LAAlcoholPart_middle:
-			return 4;
-			break;
-			
-		case LAAlcoholPart_high:
-			return 8;
-			
-		case LAAlcoholPart_crc:
-			return 0;
-			break;
-	}
+- (void)updateWithDeviceID:(int)deviceID {
+	
+	[self updateDuration];
+	[self restartMissedMessageTimer];
+	_missedMessagesInARow = 0;
+	
+	_deviceID = deviceID;
+	[self.delegate sessionDidUpdateDeviceID];
+	[self finish];
+}
+
+
+- (void)updateWithShortDeviceID:(int)shortDeviceID {
+	
+	[self updateDuration];
+	[self restartMissedMessageTimer];
+	_missedMessagesInARow = 0;
+	
+	_shortDeviceID = shortDeviceID;
+	[self.delegate sessionDidUpdateShortDeviceID];
+}
+
+
+- (void)updateWithBatteryLevel:(int)batteryLevel {
+	
+	[self updateDuration];
+	[self restartMissedMessageTimer];
+	_missedMessagesInARow = 0;
+	
+	_batteryLevel = batteryLevel;
+	[self.delegate sessionDidUpdateBatteryLevel];
 }
 
 
 - (void)everySecondTick {
-	
+	[self updateDuration];
+}
+
+
+- (void)updateDuration {
 	_duration = [[NSDate date] timeIntervalSinceDate:self.startTime];
 }
 
@@ -213,7 +212,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	self.everySecondTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(everySecondTick) userInfo:nil repeats:YES];
 	self.initialPressureCheckTimer = [NSTimer scheduledTimerWithTimeInterval:initialPressureCheckTime target:self selector:@selector(initialPressureCheck) userInfo:nil repeats:NO];
-	self.finishTimer = [NSTimer scheduledTimerWithTimeInterval:finishTime target:self selector:@selector(finish) userInfo:nil repeats:NO];
 }
 
 
@@ -221,12 +219,10 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	[self.everySecondTimer invalidate];
 	[self.initialPressureCheckTimer invalidate];
-	[self.finishTimer invalidate];
 	[self.missedMessageTimer invalidate];
 	
 	self.everySecondTimer = nil;
 	self.initialPressureCheckTimer = nil;
-	self.finishTimer = nil;
 	self.missedMessageTimer = nil;
 }
 
@@ -243,10 +239,18 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)handleMissedMessage {
 	
-	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Missed message" time:_duration];
+	[self updateDuration];
+	[self restartMissedMessageTimer];
+	_missedMessagesInARow++;
+	
+	NSString *description = [NSString stringWithFormat:@"Missed message (%d)", _missedMessagesInARow];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	
-	[self restartMissedMessageTimer];
+	if (_missedMessagesInARow > maxAcceptableMissedMessagesInARow) {
+		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeMoreMissedMessagesThenAcceptable userInfo:nil];
+		[self finishWithError:error];
+	}
 }
 
 

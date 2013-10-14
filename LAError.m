@@ -24,6 +24,10 @@
 			localizedDescription = NSLocalizedString(@"Not enough pressure to finish measure.", "LAConnect Error Description");
 			break;
 			
+		case LAErrorCodeMoreMissedMessagesThenAcceptable:
+			localizedDescription = NSLocalizedString(@"More missed messages then acceptable.", "LAConnect Error Description");
+			break;
+			
 		default:
 			break;
 	}

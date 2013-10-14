@@ -17,8 +17,7 @@ extern NSString *const ConnectManagerDidFinishMeasureWithError;
 typedef enum {
 	LAConnectManagerStateOff,
 	LAConnectManagerStateReady,
-	LAConnectManagerStateMeasurePressure,
-	LAConnectManagerStateMeasureAlcohol,
+	LAConnectManagerStateMeasure,
 	LAConnectManagerStateRespite
 } LAConnectManagerState;
 
