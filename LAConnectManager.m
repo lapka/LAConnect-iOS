@@ -14,6 +14,7 @@ NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
 NSString *const ConnectManagerDidFinishSessionWithMeasure = @"ConnectManagerDidFinishSessionWithMeasure";
 NSString *const ConnectManagerDidFinishSessionWithDeviceID = @"ConnectManagerDidFinishSessionWithDeviceID";
 NSString *const ConnectManagerDidFinishSessionWithError = @"ConnectManagerDidFinishSessionWithError";
+NSString *const ConnectManagerDidUpdatePressure = @"ConnectManagerDidUpdatePressure";
 
 
 typedef enum {
@@ -199,6 +200,8 @@ typedef enum {
 	NSString *description = [NSString stringWithFormat:@"Pressure: %.0f", _session.pressure];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdatePressure object:[NSNumber numberWithInt:_session.pressure]];
 }
 
 
