@@ -10,8 +10,9 @@
 
 
 extern NSString *const ConnectManagerDidUpdateState;
-extern NSString *const ConnectManagerDidFinishMeasureWithMeasure;
-extern NSString *const ConnectManagerDidFinishMeasureWithError;
+extern NSString *const ConnectManagerDidFinishSessionWithMeasure;
+extern NSString *const ConnectManagerDidFinishSessionWithDeviceID;
+extern NSString *const ConnectManagerDidFinishSessionWithError;
 
 
 typedef enum {

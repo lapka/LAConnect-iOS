@@ -14,6 +14,7 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 
 - (void)sessionDidStart;
 - (void)sessionDidFinishWithMeasure:(LAMeasure *)measure;
+- (void)sessionDidFinishWithDeviceID;
 - (void)sessionDidFinishWithError:(LAError *)error;
 
 - (void)sessionDidUpdatePressure;

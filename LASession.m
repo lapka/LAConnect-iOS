@@ -32,7 +32,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 @property (strong) NSTimer *initialPressureCheckTimer;
 @property (strong) NSTimer *missedMessageTimer;
 @property (strong) NSDate *startTime;
-@property BOOL needDoubleCheckAlcohol;
 @property int missedMessagesInARow;
 
 @end
@@ -49,7 +48,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		_pressure = 0;
 		_duration = 0;
 		
-		_needDoubleCheckAlcohol = NO;
 		_missedMessagesInARow = 0;
 	}
 	return self;
@@ -112,21 +110,11 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow = 0;
-	
-	if (_needDoubleCheckAlcohol) {
-		if (alcohol == _alcohol) {
-			[self.delegate sessionDidUpdateAlcohol];
-			[self finish];
-			return;
-		}
-	}
 		
 	_alcohol = alcohol;
-	
-	// refactor: this is just for debug, dont report this later
 	[self.delegate sessionDidUpdateAlcohol];
 	
-	self.needDoubleCheckAlcohol = YES;
+	[self finishWithMeasure];
 }
 
 
@@ -138,7 +126,8 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	_deviceID = deviceID;
 	[self.delegate sessionDidUpdateDeviceID];
-	[self finish];
+	
+	[self finishWithDeviceID];
 }
 
 
@@ -188,12 +177,19 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-- (void)finish {
+- (void)finishWithMeasure {
 	
 	[self invalidateTimers];
 	
 	LAMeasure *measure = [[LAMeasure alloc] initWithAlcohol:_alcohol date:[NSDate date]];
 	[self.delegate sessionDidFinishWithMeasure:measure];
+}
+
+
+- (void)finishWithDeviceID {
+	
+	[self invalidateTimers];
+	[self.delegate sessionDidFinishWithDeviceID];
 }
 
 

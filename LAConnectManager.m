@@ -11,8 +11,9 @@
 
 
 NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
-NSString *const ConnectManagerDidFinishMeasureWithMeasure = @"ConnectManagerDidFinishMeasureWithMeasure";
-NSString *const ConnectManagerDidFinishMeasureWithError = @"ConnectManagerDidFinishMeasureWithError";
+NSString *const ConnectManagerDidFinishSessionWithMeasure = @"ConnectManagerDidFinishSessionWithMeasure";
+NSString *const ConnectManagerDidFinishSessionWithDeviceID = @"ConnectManagerDidFinishSessionWithDeviceID";
+NSString *const ConnectManagerDidFinishSessionWithError = @"ConnectManagerDidFinishSessionWithError";
 
 
 typedef enum {
@@ -269,7 +270,24 @@ typedef enum {
 	
 	self.measure = measure;
 	
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishMeasureWithMeasure object:measure];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithMeasure object:measure];
+	[self updateWithState:LAConnectManagerStateRespite];
+	
+	self.session = nil;
+}
+
+
+- (void)sessionDidFinishWithDeviceID {
+	NSLog(@"LAConnectManager sessionDidFinishWithDeviceID");
+	
+	LASessionEvent *event2 = [LASessionEvent eventWithDescription:@"Session finished\n--------------------------------\n" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event2];
+	
+	NSString *description = [NSString stringWithFormat:@"Your device ID: %d", _session.deviceID];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithDeviceID object:[NSNumber numberWithInt:_session.deviceID]];
 	[self updateWithState:LAConnectManagerStateRespite];
 	
 	self.session = nil;
@@ -279,7 +297,7 @@ typedef enum {
 - (void)sessionDidFinishWithError:(LAError *)error {
 	NSLog(@"LAConnectManager sessionDidFinishWithError");
 	
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishMeasureWithError object:error];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithError object:error];
 	[self updateWithState:LAConnectManagerStateRespite];
 	self.session = nil;
 }
