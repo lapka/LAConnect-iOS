@@ -206,9 +206,9 @@ typedef enum {
 
 
 - (void)sessionDidUpdateAlcohol {
-	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.0f\n", [_session alcohol]);
+	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.2f\n", [_session alcohol]);
 	
-	NSString *description = [NSString stringWithFormat:@"Alcohol: %.0f", _session.alcohol];
+	NSString *description = [NSString stringWithFormat:@"Alcohol: %.2f", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
@@ -267,7 +267,7 @@ typedef enum {
 	LASessionEvent *event2 = [LASessionEvent eventWithDescription:@"Session finished\n--------------------------------\n" time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event2];
 	
-	NSString *description = [NSString stringWithFormat:@"Your alcohol: %.0f", _session.alcohol];
+	NSString *description = [NSString stringWithFormat:@"Your alcohol: %.2f", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	
@@ -354,6 +354,9 @@ typedef enum {
 					bit_array_free(alcohol_bits);
 					bit_array_free(short_device_id_bits);
 					bit_array_free(battery_bits);
+					
+					// convert alcohol
+					alcohol = alcohol * 0.00035;
 					
 					[_session updateWithShortDeviceID:short_device_id];
 					[_session updateWithBatteryLevel:battery_level];
