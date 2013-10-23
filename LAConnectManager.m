@@ -290,7 +290,7 @@ typedef enum {
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithDeviceID object:[NSNumber numberWithInt:_session.deviceID]];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithDeviceID object:_session];
 	[self updateWithState:LAConnectManagerStateRespite];
 	
 	self.session = nil;
