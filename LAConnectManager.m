@@ -5,6 +5,7 @@
 
 #import "LAConnectManager.h"
 #import "LASessionEvent.h"
+#import "AirMessage+ParsedData.h"
 #import "Airlift.h"
 
 #define respiteTime 5.0
@@ -313,6 +314,7 @@ typedef enum {
 				NSTimeInterval delta = [[NSDate date] timeIntervalSinceDate:_firstPressureMessageTime];
 				BOOL deltaIsInExpectedWindow = (delta > 0.15) && (delta < 0.3);
 				if (deltaIsInExpectedWindow) {
+					
 					[self updateWithState:LAConnectManagerStateMeasure];
 				}
 			}
@@ -323,9 +325,7 @@ typedef enum {
 	if (self.state == LAConnectManagerStateMeasure) {
 		
 		if (message.markerID == LAMarkerID_Pressure) {
-			
-			float pressure = bit_array_get_word8(message.data, 0);
-			[_session updateWithPressure:pressure];
+			[_session updateWithPressure:message.pressure];
 		}
 		
 		if (message.markerID == LAMarkerID_Alcohol) {
@@ -334,23 +334,10 @@ typedef enum {
 				NSTimeInterval delta = [[NSDate date] timeIntervalSinceDate:_lastAlcoholMessageTime];
 				BOOL deltaIsInExpectedWindow = (delta > 0.1) && (delta < 3.3);
 				if (deltaIsInExpectedWindow) {
-					// refactor: incapsulate this sheat
-					BIT_ARRAY *alcohol_bits = bit_array_create(12);
-					BIT_ARRAY *short_device_id_bits = bit_array_create(6);
-					BIT_ARRAY *battery_bits = bit_array_create(2);
-					bit_array_copy(alcohol_bits, 0, message.data, 8, 12);
-					bit_array_copy(short_device_id_bits, 0, message.data, 2, 6);
-					bit_array_copy(battery_bits, 0, message.data, 0, 2);
-					float alcohol = bit_array_get_word16(alcohol_bits, 0);
-					int short_device_id = bit_array_get_word8(short_device_id_bits, 0);
-					int battery_level = bit_array_get_word8(battery_bits, 0);
-					bit_array_free(alcohol_bits);
-					bit_array_free(short_device_id_bits);
-					bit_array_free(battery_bits);
 					
-					[_session updateWithShortDeviceID:short_device_id];
-					[_session updateWithBatteryLevel:battery_level];
-					[_session updateWithAlcohol:alcohol];
+					[_session updateWithShortDeviceID:message.shortDeviceID];
+					[_session updateWithBatteryLevel:message.deviceID];
+					[_session updateWithAlcohol:message.alcohol];
 				}
 			}
 			self.lastAlcoholMessageTime = [message.time copy];
@@ -358,18 +345,8 @@ typedef enum {
 		
 		if (message.markerID == LAMarkerID_DeviceID) {
 			
-			// refactor: incapsulate this sheat
-			BIT_ARRAY *device_id_bits = bit_array_create(18);
-			BIT_ARRAY *battery_bits = bit_array_create(2);
-			bit_array_copy(device_id_bits, 0, message.data, 2, 18);
-			bit_array_copy(battery_bits, 0, message.data, 0, 2);
-			int device_id = bit_array_get_word32(device_id_bits, 0);
-			int battery_level = bit_array_get_word8(battery_bits, 0);
-			bit_array_free(device_id_bits);
-			bit_array_free(battery_bits);
-			
-			[_session updateWithBatteryLevel:battery_level];
-			[_session updateWithDeviceID:device_id];
+			[_session updateWithBatteryLevel:message.batteryLevel];
+			[_session updateWithDeviceID:message.deviceID];
 		}
 	}
 }
