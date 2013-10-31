@@ -9,6 +9,7 @@
 #import "Airlift.h"
 
 #define respiteTime 5.0
+#define alcoholToBAC_coefficient 0.000035
 
 
 NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
@@ -207,7 +208,7 @@ typedef enum {
 
 
 - (void)sessionDidUpdateAlcohol {
-	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.2f\n", [_session alcohol]);
+	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.3f\n", [_session alcohol]);
 	
 	NSString *description = [NSString stringWithFormat:@"Alcohol: %.0f", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
@@ -335,9 +336,11 @@ typedef enum {
 				BOOL deltaIsInExpectedWindow = (delta > 0.1) && (delta < 3.3);
 				if (deltaIsInExpectedWindow) {
 					
+					float bac = [self bacValueFromRawAlcohol:message.alcohol];
+					
 					[_session updateWithShortDeviceID:message.shortDeviceID];
-					[_session updateWithBatteryLevel:message.deviceID];
-					[_session updateWithAlcohol:message.alcohol];
+					[_session updateWithBatteryLevel:message.batteryLevel];
+					[_session updateWithAlcohol:bac];
 				}
 			}
 			self.lastAlcoholMessageTime = [message.time copy];
@@ -355,6 +358,13 @@ typedef enum {
 
 
 #pragma mark - Utilities
+
+
+- (float)bacValueFromRawAlcohol:(int)alcohol {
+	
+	return alcohol * alcoholToBAC_coefficient;
+}
+
 
 
 - (NSString *)stateToString:(LAConnectManagerState)state {
