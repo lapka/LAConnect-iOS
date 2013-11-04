@@ -16,6 +16,7 @@ NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
 NSString *const ConnectManagerDidFinishSessionWithMeasure = @"ConnectManagerDidFinishSessionWithMeasure";
 NSString *const ConnectManagerDidFinishSessionWithDeviceID = @"ConnectManagerDidFinishSessionWithDeviceID";
 NSString *const ConnectManagerDidFinishSessionWithError = @"ConnectManagerDidFinishSessionWithError";
+NSString *const ConnectManagerDidUpdateBatteryLevel = @"ConnectManagerDidUpdateBatteryLevel";
 NSString *const ConnectManagerDidUpdatePressure = @"ConnectManagerDidUpdatePressure";
 
 
@@ -260,6 +261,8 @@ typedef enum {
 	NSString *description = [NSString stringWithFormat:@"Battery Level: %X", _session.batteryLevel];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateBatteryLevel object:@(_session.batteryLevel)];
 }
 
 
