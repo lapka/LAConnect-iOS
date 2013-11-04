@@ -9,7 +9,7 @@
 #import "Airlift.h"
 
 #define respiteTime 5.0
-#define alcoholToBAC_coefficient 0.000035
+#define alcoholToBAC_coefficient 0.0000575
 
 
 NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
