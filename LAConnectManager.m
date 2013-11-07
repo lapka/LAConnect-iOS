@@ -8,7 +8,7 @@
 #import "AirMessage+ParsedData.h"
 #import "Airlift.h"
 
-#define respiteTime 10.0
+#define respiteTime 5.0
 #define alcoholToBAC_coefficient 0.0000575
 
 
