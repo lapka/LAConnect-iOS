@@ -8,7 +8,6 @@
 
 #define minAcceptablePressure 3.0
 #define maxAcceptablePressure 6.0
-#define initialPressureCheckTime 3.0
 #define missedMessageDelay 0.3
 #define maxAcceptableMissedMessagesInARow 10
 #define finishTime 10.0
@@ -29,7 +28,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 @interface LASession ()
 @property (strong) NSTimer *everySecondTimer;
-@property (strong) NSTimer *initialPressureCheckTimer;
 @property (strong) NSTimer *missedMessageTimer;
 @property (strong) NSDate *startTime;
 @property int missedMessagesInARow;
@@ -76,6 +74,17 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
+- (void)updateWithCountdown:(float)countdown {
+	
+	[self updateDuration];
+	[self restartMissedMessageTimer];
+	_missedMessagesInARow = 0;
+	
+	_countdown = countdown;
+	[self.delegate sessionDidUpdateCountdown];
+}
+
+
 - (void)updateWithPressure:(float)pressure {
 	
 	[self updateDuration];
@@ -84,24 +93,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	_pressure = pressure;
 	[self.delegate sessionDidUpdatePressure];
-	
-	// Check pressure
-	
-	BOOL pressureIsInAcceptableRange = (_pressure >= minAcceptablePressure) && (_pressure <= maxAcceptablePressure);
-	
-	if (!_pressureGotToAcceptableRange && pressureIsInAcceptableRange) {
-		_pressureGotToAcceptableRange = YES;
-	}
-	
-	if (_pressureGotToAcceptableRange && !pressureIsInAcceptableRange) {
-//		NSLog(@"Warning: LASession: Pressure goes out of acceptable range, here will be the error");
-//		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeNotEnoughPressureToFinishMeasure userInfo:nil];
-//		[self finishWithError:error];
-		
-//		NSString *description = [NSString stringWithFormat:@"Error: %@ pressure", (_pressure < minAcceptablePressure) ? @"small" : @"high"];
-//		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
-//		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-	}
 }
 
 
@@ -163,20 +154,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-- (void)initialPressureCheck {
-	
-	if (!_pressureGotToAcceptableRange) {
-		NSLog(@"Warning: LASession: Pressure doesn't get to acceptable range in time (%f), here will be the error", _duration);
-//		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeNotEnoughPressureToStartMeasure userInfo:nil];
-//		[self finishWithError:error];
-		
-//		NSString *description = [NSString stringWithFormat:@"Error: %@ pressure", (_pressure < minAcceptablePressure) ? @"small" : @"high"];
-//		LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
-//		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-	}
-}
-
-
 - (void)finishWithMeasure {
 	
 	[self invalidateTimers];
@@ -194,6 +171,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 
 - (void)finishWithError:(LAError *)error {
+	printf("\n");
 	NSLog(@"LASession finishWithError: %@", [error localizedDescription]);
 	
 	[self invalidateTimers];
@@ -207,18 +185,15 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 - (void)scheduleTimers {
 	
 	self.everySecondTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(everySecondTick) userInfo:nil repeats:YES];
-	self.initialPressureCheckTimer = [NSTimer scheduledTimerWithTimeInterval:initialPressureCheckTime target:self selector:@selector(initialPressureCheck) userInfo:nil repeats:NO];
 }
 
 
 - (void)invalidateTimers {
 	
 	[self.everySecondTimer invalidate];
-	[self.initialPressureCheckTimer invalidate];
 	[self.missedMessageTimer invalidate];
 	
 	self.everySecondTimer = nil;
-	self.initialPressureCheckTimer = nil;
 	self.missedMessageTimer = nil;
 }
 

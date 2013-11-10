@@ -9,7 +9,7 @@
 #import "Airlift.h"
 
 #define respiteTime 5.0
-#define alcoholToBAC_coefficient 0.0000575
+#define alcoholToBAC_coefficient 0.0000662
 
 
 NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
@@ -17,19 +17,20 @@ NSString *const ConnectManagerDidFinishSessionWithMeasure = @"ConnectManagerDidF
 NSString *const ConnectManagerDidFinishSessionWithDeviceID = @"ConnectManagerDidFinishSessionWithDeviceID";
 NSString *const ConnectManagerDidFinishSessionWithError = @"ConnectManagerDidFinishSessionWithError";
 NSString *const ConnectManagerDidUpdateBatteryLevel = @"ConnectManagerDidUpdateBatteryLevel";
+NSString *const ConnectManagerDidUpdateCountdown = @"ConnectManagerDidUpdateCountdown";
 NSString *const ConnectManagerDidUpdatePressure = @"ConnectManagerDidUpdatePressure";
 
 
 typedef enum {
-	LAMarkerID_Pressure = AirWordValue_Marker_1,
-	LAMarkerID_Alcohol  = AirWordValue_Marker_2,
-	LAMarkerID_DeviceID = AirWordValue_Marker_3
+	LAMarkerID_Countdown = AirWordValue_Marker_1,
+	LAMarkerID_Alcohol   = AirWordValue_Marker_2,
+	LAMarkerID_DeviceID  = AirWordValue_Marker_3
 } LAMarkerID;
 
 
 @interface LAConnectManager ()
 @property (strong) NSTimer *respiteTimer;
-@property (strong) NSDate *firstPressureMessageTime;
+@property (strong) NSDate *firstCountdownMessageTime;
 @property (strong) NSDate *lastAlcoholMessageTime;
 @end
 
@@ -103,6 +104,7 @@ typedef enum {
 	// ready -> measure
 	if (fromState == LAConnectManagerStateReady && toState == LAConnectManagerStateMeasure) {
 		_state = toState;
+		printf("\n");
 		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
 		
 		self.session = [LASession new];
@@ -197,6 +199,17 @@ typedef enum {
 }
 
 
+- (void)sessionDidUpdateCountdown {
+	printf("\nLAConnectManager sessionDidUpdateCountdown: %.0f\n", _session.countdown);
+	
+	NSString *description = [NSString stringWithFormat:@"Countdown: %.0f", _session.countdown];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateCountdown object:[NSNumber numberWithInt:_session.countdown]];
+}
+
+
 - (void)sessionDidUpdatePressure {
 	printf("\nLAConnectManager sessionDidUpdatePressure: %.0f\n", [_session pressure]);
 	
@@ -209,9 +222,9 @@ typedef enum {
 
 
 - (void)sessionDidUpdateAlcohol {
-	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.3f\n", [_session alcohol]);
+	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.2f\n", [_session alcohol]);
 	
-	NSString *description = [NSString stringWithFormat:@"Alcohol: %.0f", _session.alcohol];
+	NSString *description = [NSString stringWithFormat:@"BAC: %.2f", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
@@ -312,24 +325,24 @@ typedef enum {
 - (void)airListenerDidReceiveMessage:(AirMessage *)message {
 	
 	if (self.state == LAConnectManagerStateReady) {
-		if (message.markerID == LAMarkerID_Pressure) {
+		if (message.markerID == LAMarkerID_Countdown) {
 			
-			if (_firstPressureMessageTime) {
-				NSTimeInterval delta = [[NSDate date] timeIntervalSinceDate:_firstPressureMessageTime];
+			if (_firstCountdownMessageTime) {
+				NSTimeInterval delta = [[NSDate date] timeIntervalSinceDate:_firstCountdownMessageTime];
 				BOOL deltaIsInExpectedWindow = (delta > 0.15) && (delta < 0.3);
 				if (deltaIsInExpectedWindow) {
 					
 					[self updateWithState:LAConnectManagerStateMeasure];
 				}
 			}
-			self.firstPressureMessageTime = [message.time copy];
+			self.firstCountdownMessageTime = [message.time copy];
 		}
 	}
 	
 	if (self.state == LAConnectManagerStateMeasure) {
 		
-		if (message.markerID == LAMarkerID_Pressure) {
-			[_session updateWithPressure:message.pressure];
+		if (message.markerID == LAMarkerID_Countdown) {
+			[_session updateWithCountdown:message.countdown];
 		}
 		
 		if (message.markerID == LAMarkerID_Alcohol) {
@@ -341,9 +354,15 @@ typedef enum {
 					
 					float bac = [self bacValueFromRawAlcohol:message.alcohol];
 					
+					[_session updateWithPressure:message.pressure];
 					[_session updateWithShortDeviceID:message.shortDeviceID];
 					[_session updateWithBatteryLevel:message.batteryLevel];
 					[_session updateWithAlcohol:bac];
+					
+					// trace raw alcohol
+					NSString *description = [NSString stringWithFormat:@"Alcohol: %d", message.alcohol];
+					LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+					[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 				}
 			}
 			self.lastAlcoholMessageTime = [message.time copy];

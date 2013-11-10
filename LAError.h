@@ -10,8 +10,6 @@
 
 
 typedef enum {
-	LAErrorCodeNotEnoughPressureToStartMeasure,
-	LAErrorCodeNotEnoughPressureToFinishMeasure,
 	LAErrorCodeMoreMissedMessagesThenAcceptable
 } LAErrorCode;
 

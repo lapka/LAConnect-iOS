@@ -12,6 +12,7 @@
 
 @interface AirMessage (ParsedData)
 
+@property (readonly) int countdown;
 @property (readonly) int pressure;
 @property (readonly) int alcohol;
 @property (readonly) int deviceID;

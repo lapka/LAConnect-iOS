@@ -12,9 +12,20 @@
 @implementation AirMessage (ParsedData)
 
 
-- (int)pressure {
+- (int)countdown {
 	
 	return bit_array_get_word8(_data, 0);
+}
+
+
+- (int)pressure {
+	
+	BIT_ARRAY *pressure_bits = bit_array_create(4);
+	bit_array_copy(pressure_bits, 0, _data, 20, 4);
+	int pressure = bit_array_get_word16(pressure_bits, 0);
+	bit_array_free(pressure_bits);
+	
+	return pressure;
 }
 
 
@@ -31,8 +42,8 @@
 
 - (int)deviceID {
 	
-	BIT_ARRAY *device_id_bits = bit_array_create(18);
-	bit_array_copy(device_id_bits, 0, _data, 2, 18);
+	BIT_ARRAY *device_id_bits = bit_array_create(22);
+	bit_array_copy(device_id_bits, 0, _data, 2, 22);
 	int deviceID = bit_array_get_word32(device_id_bits, 0);
 	bit_array_free(device_id_bits);
 	

@@ -17,6 +17,7 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 - (void)sessionDidFinishWithDeviceID;
 - (void)sessionDidFinishWithError:(LAError *)error;
 
+- (void)sessionDidUpdateCountdown;
 - (void)sessionDidUpdatePressure;
 - (void)sessionDidUpdateAlcohol;
 - (void)sessionDidUpdateDeviceID;
@@ -33,12 +34,11 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 @property int deviceID;
 @property int shortDeviceID;
 @property int batteryLevel;
+@property float countdown;
 @property float duration;
 @property NSObject <LASesionDelegate> *delegate;
 
-// flags
-@property (readonly) BOOL pressureGotToAcceptableRange;
-
+- (void)updateWithCountdown:(float)countdown;
 - (void)updateWithPressure:(float)pressure;
 - (void)updateWithAlcohol:(float)alcohol;
 - (void)updateWithDeviceID:(int)deviceID;
