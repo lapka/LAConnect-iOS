@@ -204,13 +204,9 @@ typedef enum {
 
 
 - (void)sessionDidUpdateCountdown {
-	printf("\nLAConnectManager sessionDidUpdateCountdown: %.0f\n", _session.countdown);
+	printf("\nLAConnectManager sessionDidUpdateCountdown: %.1f\n", _session.countdown);
 	
-	NSString *description = [NSString stringWithFormat:@"Countdown: %.0f", _session.countdown];
-	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-	
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateCountdown object:[NSNumber numberWithInt:_session.countdown]];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateCountdown object:[NSNumber numberWithFloat:_session.countdown]];
 }
 
 
@@ -348,6 +344,11 @@ typedef enum {
 		if (message.markerID == LAMarkerID_Countdown) {
 			float countdownInSeconds = [self countdownToSeconds:message.countdown];
 			[_session updateWithCountdown:countdownInSeconds];
+			
+			// trace raw countdown
+			NSString *description = [NSString stringWithFormat:@"Countdown: %d", message.countdown];
+			LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+			[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 		}
 		
 		if (message.markerID == LAMarkerID_Alcohol) {
@@ -399,7 +400,7 @@ typedef enum {
 }
 
 
-- (float)countdownToSeconds:(int)countdown {
+- (float)countdownToSeconds:(float)countdown {
 	
 	return countdown * countdownToSeconds_coefficient;
 }
