@@ -9,7 +9,9 @@
 #import "Airlift.h"
 
 #define respiteTime 5.0
-#define alcoholToBAC_coefficient 0.0000662
+#define default_alcoholToPromille_coefficient 0.000662
+#define countdownToSeconds_coefficient 0.25
+
 
 
 NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
@@ -63,6 +65,8 @@ typedef enum {
 		
 		_airListener = [AirListener new];
 		_airListener.delegate = self;
+		
+		_alcoholToPromilleCoefficient = default_alcoholToPromille_coefficient;
 		
 	}
 	return self;
@@ -222,9 +226,9 @@ typedef enum {
 
 
 - (void)sessionDidUpdateAlcohol {
-	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.2f\n", [_session alcohol]);
+	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.2f‰\n", [_session alcohol]);
 	
-	NSString *description = [NSString stringWithFormat:@"BAC: %.2f", _session.alcohol];
+	NSString *description = [NSString stringWithFormat:@"Promille: %.2f‰", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
@@ -342,7 +346,8 @@ typedef enum {
 	if (self.state == LAConnectManagerStateMeasure) {
 		
 		if (message.markerID == LAMarkerID_Countdown) {
-			[_session updateWithCountdown:message.countdown];
+			float countdownInSeconds = [self countdownToSeconds:message.countdown];
+			[_session updateWithCountdown:countdownInSeconds];
 		}
 		
 		if (message.markerID == LAMarkerID_Alcohol) {
@@ -352,12 +357,12 @@ typedef enum {
 				BOOL deltaIsInExpectedWindow = (delta > 0.1) && (delta < 3.3);
 				if (deltaIsInExpectedWindow) {
 					
-					float bac = [self bacValueFromRawAlcohol:message.alcohol];
+					float promille = [self promilleValueFromRawAlcohol:message.alcohol];
 					
 					[_session updateWithPressure:message.pressure];
 					[_session updateWithShortDeviceID:message.shortDeviceID];
 					[_session updateWithBatteryLevel:message.batteryLevel];
-					[_session updateWithAlcohol:bac];
+					[_session updateWithAlcohol:promille];
 					
 					// trace raw alcohol
 					NSString *description = [NSString stringWithFormat:@"Alcohol: %d", message.alcohol];
@@ -384,9 +389,20 @@ typedef enum {
 
 - (float)bacValueFromRawAlcohol:(int)alcohol {
 	
-	return alcohol * alcoholToBAC_coefficient;
+	return alcohol * _alcoholToPromilleCoefficient / 10;
 }
 
+
+- (float)promilleValueFromRawAlcohol:(int)alcohol {
+	
+	return alcohol * _alcoholToPromilleCoefficient;
+}
+
+
+- (float)countdownToSeconds:(int)countdown {
+	
+	return countdown * countdownToSeconds_coefficient;
+}
 
 
 - (NSString *)stateToString:(LAConnectManagerState)state {
