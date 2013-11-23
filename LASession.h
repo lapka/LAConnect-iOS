@@ -35,7 +35,7 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 @property int shortDeviceID;
 @property int batteryLevel;
 @property float countdown;
-@property float duration;
+@property float duration; // refactor: remove since we have countdown?
 @property NSObject <LASesionDelegate> *delegate;
 
 - (void)updateWithCountdown:(float)countdown;

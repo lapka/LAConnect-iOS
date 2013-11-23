@@ -222,9 +222,9 @@ typedef enum {
 
 
 - (void)sessionDidUpdateAlcohol {
-	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.2f‰\n", [_session alcohol]);
+	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.2f%% BAC\n", [_session alcohol]);
 	
-	NSString *description = [NSString stringWithFormat:@"Promille: %.2f‰", _session.alcohol];
+	NSString *description = [NSString stringWithFormat:@"Bac: %.2f%%", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
@@ -358,12 +358,12 @@ typedef enum {
 				BOOL deltaIsInExpectedWindow = (delta > 0.1) && (delta < 3.3);
 				if (deltaIsInExpectedWindow) {
 					
-					float promille = [self promilleValueFromRawAlcohol:message.alcohol];
+					float bac = [self bacValueFromRawAlcohol:message.alcohol];
 					
 					[_session updateWithPressure:message.pressure];
 					[_session updateWithShortDeviceID:message.shortDeviceID];
 					[_session updateWithBatteryLevel:message.batteryLevel];
-					[_session updateWithAlcohol:promille];
+					[_session updateWithAlcohol:bac];
 					
 					// trace raw alcohol
 					NSString *description = [NSString stringWithFormat:@"Alcohol: %d", message.alcohol];
