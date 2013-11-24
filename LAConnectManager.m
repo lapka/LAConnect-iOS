@@ -9,7 +9,7 @@
 #import "Airlift.h"
 
 #define respiteTime 5.0
-#define default_alcoholToPromille_coefficient 0.000662
+#define default_alcoholToPromille_coefficient 0.001666
 #define countdownToSeconds_coefficient 0.25
 
 
