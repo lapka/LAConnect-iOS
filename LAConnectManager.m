@@ -233,9 +233,9 @@ typedef enum {
 - (void)sessionDidUpdateDeviceID {
 	
 	// convert to binary string, just for log
-	BIT_ARRAY *device_id_bits = bit_array_create(18);
+	BIT_ARRAY *device_id_bits = bit_array_create(22);
 	bit_array_set_word32(device_id_bits, 0, _session.deviceID);
-	char *str = malloc(18 * sizeof(char));
+	char *str = malloc(22 * sizeof(char));
 	bit_array_to_str_rev(device_id_bits, str);
 	bit_array_free(device_id_bits);
 	
