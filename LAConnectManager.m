@@ -10,6 +10,7 @@
 
 #define respiteTime 5.0
 #define default_alcoholToPromille_coefficient 0.001666
+#define default_calibration_coefficient 1.0
 #define countdownToSeconds_coefficient 0.25
 
 
@@ -41,6 +42,8 @@ typedef enum {
 
 @implementation LAConnectManager
 
+@synthesize calibrationCoefficient = _calibrationCoefficient;
+
 
 #pragma mark - Singleton
 
@@ -67,6 +70,7 @@ typedef enum {
 		_airListener.delegate = self;
 		
 		_alcoholToPromilleCoefficient = default_alcoholToPromille_coefficient;
+		_calibrationCoefficient = default_calibration_coefficient;
 		
 	}
 	return self;
@@ -359,6 +363,7 @@ typedef enum {
 				if (deltaIsInExpectedWindow) {
 					
 					float bac = [self bacValueFromRawAlcohol:message.alcohol];
+					bac = [self calibratedBacValue:bac];
 					
 					[_session updateWithPressure:message.pressure];
 					[_session updateWithShortDeviceID:message.shortDeviceID];
@@ -385,7 +390,29 @@ typedef enum {
 
 
 
+#pragma mark - Calibration Coefficient
+
+
+- (float)calibrationCoefficient {
+	return _calibrationCoefficient;
+}
+
+
+- (void)setCalibrationCoefficient:(float)calibrationCoefficient {
+	if (calibrationCoefficient == 0) return;
+	_calibrationCoefficient = calibrationCoefficient;
+}
+
+
+
+
 #pragma mark - Utilities
+
+
+- (float)calibratedBacValue:(float)bac {
+	
+	return bac * _calibrationCoefficient;
+}
 
 
 - (float)bacValueFromRawAlcohol:(int)alcohol {

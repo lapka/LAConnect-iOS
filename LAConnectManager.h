@@ -32,7 +32,9 @@ typedef enum {
 @property (readonly) LAConnectManagerState state;
 @property (strong) LASession *session;
 @property (strong) LAMeasure *measure;
+
 @property float alcoholToPromilleCoefficient;
+@property float calibrationCoefficient;
 
 + (LAConnectManager *)sharedManager;
 
