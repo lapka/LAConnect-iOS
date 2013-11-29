@@ -236,39 +236,17 @@ typedef enum {
 
 - (void)sessionDidUpdateDeviceID {
 	
-	// convert to binary string, just for log
-	BIT_ARRAY *device_id_bits = bit_array_create(22);
-	bit_array_set_word32(device_id_bits, 0, _session.deviceID);
-	char *str = malloc(22 * sizeof(char));
-	bit_array_to_str_rev(device_id_bits, str);
-	bit_array_free(device_id_bits);
-	
-	printf("\nLAConnectManager sessionDidUpdateDeviceID: %s\n", str);
-	
-	NSString *description = [NSString stringWithFormat:@"DeviceID: %s (%0X)", str, _session.deviceID];
+	NSString *description = [NSString stringWithFormat:@"DeviceID: %d", _session.deviceID];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-	
-	free(str);
 }
 
 
 - (void)sessionDidUpdateShortDeviceID {
 	
-	// convert to binary string, just for log
-	BIT_ARRAY *short_device_id_bits = bit_array_create(6);
-	bit_array_set_word8(short_device_id_bits, 0, _session.shortDeviceID);
-	char *str = malloc(6 * sizeof(char));
-	bit_array_to_str_rev(short_device_id_bits, str);
-	bit_array_free(short_device_id_bits);
-	
-	printf("\nLAConnectManager sessionDidUpdateShortDeviceID: %s\n", str);
-	
-	NSString *description = [NSString stringWithFormat:@"Short DeviceID: %s", str];
+	NSString *description = [NSString stringWithFormat:@"Short DeviceID: %d", _session.shortDeviceID];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-	
-	free(str);
 }
 
 
