@@ -85,7 +85,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-- (void)updateWithPressure:(float)pressure {
+- (void)updateWithPressure:(int)pressure {
 	
 	[self updateDuration];
 	[self restartMissedMessageTimer];
@@ -96,13 +96,14 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-- (void)updateWithAlcohol:(float)alcohol {
+- (void)updateWithRawAlcohol:(int)rawAlcohol {
 	
 	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow = 0;
-		
-	_alcohol = alcohol;
+	
+	_rawAlcohol = rawAlcohol;
+	_alcohol = [self bacValueFromRawAlcohol:rawAlcohol withPressure:_pressure];
 	[self.delegate sessionDidUpdateAlcohol];
 	
 	[self finishWithMeasure];
@@ -222,6 +223,23 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeMoreMissedMessagesThenAcceptable userInfo:nil];
 		[self finishWithError:error];
 	}
+}
+
+
+#pragma mark - Utilities
+
+
+- (float)bacValueFromRawAlcohol:(int)rawAlcohol withPressure:(int)pressure {
+	
+	int RAW = rawAlcohol;
+	float COEF = _alcoholToPromilleCoefficient;
+	float K = _pressureCorrectionCoefficient;
+	int P = _pressure;
+	
+	float alcoholInPromille = (RAW * COEF) / (1 + K * P);
+	
+	float alcoholInBAC = alcoholInPromille / 10;
+	return alcoholInBAC;
 }
 
 

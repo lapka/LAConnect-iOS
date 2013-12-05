@@ -34,7 +34,7 @@ typedef enum {
 @property (strong) LAMeasure *measure;
 
 @property float alcoholToPromilleCoefficient;
-@property float calibrationCoefficient;
+@property float pressureCorrectionCoefficient;
 
 + (LAConnectManager *)sharedManager;
 
