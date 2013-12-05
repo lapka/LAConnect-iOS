@@ -41,6 +41,7 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 
 @property float alcoholToPromilleCoefficient;
 @property float pressureCorrectionCoefficient;
+@property float standardPressureForCorrection;
 
 - (void)updateWithCountdown:(float)countdown;
 - (void)updateWithPressure:(int)pressure;

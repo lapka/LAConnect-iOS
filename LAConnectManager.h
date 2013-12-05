@@ -35,6 +35,7 @@ typedef enum {
 
 @property float alcoholToPromilleCoefficient;
 @property float pressureCorrectionCoefficient;
+@property float standardPressureForCorrection;
 
 + (LAConnectManager *)sharedManager;
 

@@ -235,8 +235,9 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	float COEF = _alcoholToPromilleCoefficient;
 	float K = _pressureCorrectionCoefficient;
 	int P = _pressure;
+	int P0 = _standardPressureForCorrection;
 	
-	float alcoholInPromille = (RAW * COEF) / (1 + K * P);
+	float alcoholInPromille = (RAW * COEF) / (1 + K * (P - P0));
 	
 	float alcoholInBAC = alcoholInPromille / 10;
 	return alcoholInBAC;

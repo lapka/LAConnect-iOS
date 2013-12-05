@@ -12,7 +12,8 @@
 #define countdownToSeconds_coefficient 0.25
 
 #define default_alcoholToPromille_coefficient 0.001666
-#define default_pressureCorrection_coefficient 0.010
+#define default_pressureCorrection_coefficient 0.025
+#define default_standardPressureForCorrection 5
 
 
 
@@ -70,6 +71,7 @@ typedef enum {
 		
 		_alcoholToPromilleCoefficient = default_alcoholToPromille_coefficient;
 		_pressureCorrectionCoefficient = default_pressureCorrection_coefficient;
+		_standardPressureForCorrection = default_standardPressureForCorrection;
 	}
 	return self;
 }
@@ -116,6 +118,7 @@ typedef enum {
 		self.session = [LASession new];
 		_session.alcoholToPromilleCoefficient = _alcoholToPromilleCoefficient;
 		_session.pressureCorrectionCoefficient = _pressureCorrectionCoefficient;
+		_session.standardPressureForCorrection = _standardPressureForCorrection;
 		_session.delegate = self;
 		[_session start];
 		
