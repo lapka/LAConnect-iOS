@@ -11,7 +11,7 @@
 #define respiteTime 5.0
 #define countdownToSeconds_coefficient 0.25
 
-#define default_alcoholToPromille_coefficient 0.001666
+#define default_alcoholToPromille_coefficient 600
 #define default_pressureCorrection_coefficient 0.025
 #define default_standardPressureForCorrection 5
 
