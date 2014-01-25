@@ -35,7 +35,6 @@ typedef enum {
 
 @interface LAConnectManager ()
 @property (strong) NSTimer *respiteTimer;
-@property (strong) NSDate *firstCountdownMessageTime;
 @property (strong) NSDate *lastAlcoholMessageTime;
 @end
 
@@ -310,17 +309,8 @@ typedef enum {
 - (void)airListenerDidReceiveMessage:(AirMessage *)message {
 	
 	if (self.state == LAConnectManagerStateReady) {
-		if (message.markerID == LAMarkerID_Countdown) {
-			
-			if (_firstCountdownMessageTime) {
-				NSTimeInterval delta = [[NSDate date] timeIntervalSinceDate:_firstCountdownMessageTime];
-				BOOL deltaIsInExpectedWindow = (delta > 0.15) && (delta < 0.3);
-				if (deltaIsInExpectedWindow) {
-					
-					[self updateWithState:LAConnectManagerStateMeasure];
-				}
-			}
-			self.firstCountdownMessageTime = [message.time copy];
+		if (message.markerID == LAMarkerID_Countdown && message.followedBySameMarker) {
+			[self updateWithState:LAConnectManagerStateMeasure];
 		}
 	}
 	
