@@ -15,6 +15,8 @@
 #define default_pressureCorrection_coefficient 0.025
 #define default_standardPressureForCorrection 5
 
+#define shortMessageLengthInFrames 3
+
 
 
 NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
@@ -118,6 +120,8 @@ typedef enum {
 		_session.alcoholToPromilleCoefficient = _alcoholToPromilleCoefficient;
 		_session.pressureCorrectionCoefficient = _pressureCorrectionCoefficient;
 		_session.standardPressureForCorrection = _standardPressureForCorrection;
+		_session.framesFrequency = _airListener.airSignalProcessor.stepFrequency;
+		_session.framesSinceStart = shortMessageLengthInFrames;
 		_session.delegate = self;
 		[_session start];
 		
@@ -353,6 +357,16 @@ typedef enum {
 			[_session updateWithDeviceID:message.deviceID];
 		}
 	}
+}
+
+
+- (void)airListenerDidProcessWord {
+
+	if (_session) {
+		[_session incrementFramesCounter];
+		printf("[%.0f]", _session.framesSinceStart);
+	}
+	
 }
 
 

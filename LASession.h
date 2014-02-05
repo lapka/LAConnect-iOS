@@ -47,6 +47,8 @@ typedef enum {
 @property int batteryLevel;
 @property float countdown;
 @property float duration; // refactor: remove since we have countdown?
+@property float framesSinceStart;
+@property float framesFrequency;
 
 @property NSObject <LASesionDelegate> *delegate;
 
@@ -65,6 +67,7 @@ typedef enum {
 - (void)updateWithShortDeviceID:(int)shortDeviceID;
 - (void)updateWithBatteryLevel:(int)batteryLevel;
 - (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion;
+- (void)incrementFramesCounter;
 - (void)start;
 - (void)stop;
 

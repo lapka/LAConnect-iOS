@@ -27,7 +27,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 
 @interface LASession ()
-@property (strong) NSTimer *everySecondTimer;
 @property (strong) NSTimer *missedMessageTimer;
 @property (strong) NSDate *startTime;
 @property int missedMessagesInARow;
@@ -45,6 +44,8 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		_alcohol = 0;
 		_pressure = 0;
 		_duration = 0;
+		_framesSinceStart = 0;
+		_framesFrequency = 10;
 		
 		_missedMessagesInARow = 0;
 		
@@ -78,7 +79,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithCountdown:(float)countdown {
 	
-	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow = 0;
 	
@@ -89,7 +89,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithPressure:(int)pressure {
 	
-	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow = 0;
 	
@@ -100,7 +99,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithRawAlcohol:(int)rawAlcohol {
 	
-	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow = 0;
 	
@@ -114,7 +112,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithDeviceID:(int)deviceID {
 	
-	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow = 0;
 	
@@ -127,7 +124,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithShortDeviceID:(int)shortDeviceID {
 	
-	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow = 0;
 	
@@ -138,7 +134,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithBatteryLevel:(int)batteryLevel {
 	
-	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow = 0;
 	
@@ -154,13 +149,15 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-- (void)everySecondTick {
+- (void)incrementFramesCounter {
+	
+	_framesSinceStart++;
 	[self updateDuration];
 }
 
 
 - (void)updateDuration {
-	_duration = [[NSDate date] timeIntervalSinceDate:self.startTime];
+	_duration = _framesSinceStart / _framesFrequency;
 }
 
 
@@ -194,16 +191,12 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)scheduleTimers {
 	
-	self.everySecondTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(everySecondTick) userInfo:nil repeats:YES];
 }
 
 
 - (void)invalidateTimers {
 	
-	[self.everySecondTimer invalidate];
 	[self.missedMessageTimer invalidate];
-	
-	self.everySecondTimer = nil;
 	self.missedMessageTimer = nil;
 }
 
@@ -212,6 +205,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 
 - (void)restartMissedMessageTimer {
+	// refactor: don't forget to do something about
 	
 	[self.missedMessageTimer invalidate];
 	self.missedMessageTimer = [NSTimer scheduledTimerWithTimeInterval:missedMessageDelay target:self selector:@selector(handleMissedMessage) userInfo:nil repeats:NO];
@@ -220,7 +214,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)handleMissedMessage {
 	
-	[self updateDuration];
 	[self restartMissedMessageTimer];
 	_missedMessagesInARow++;
 	
