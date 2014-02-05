@@ -8,7 +8,16 @@
 #import "LAError.h"
 #import "bit_array.h"
 
+
 extern NSString *const ConnectManagerDidRecieveSessionEvent;
+
+
+typedef enum {
+	LAConnectProtocolVersionUnknown = 0,
+	LAConnectProtocolVersion_1 = 1,
+	LAConnectProtocolVersion_2
+} LAConnectProtocolVersion;
+
 
 @protocol LASesionDelegate <NSObject>
 
@@ -23,6 +32,7 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 - (void)sessionDidUpdateDeviceID;
 - (void)sessionDidUpdateShortDeviceID;
 - (void)sessionDidUpdateBatteryLevel;
+- (void)sessionDidUpdateProtocolVersion;
 
 @end
 
@@ -37,11 +47,16 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 @property int batteryLevel;
 @property float countdown;
 @property float duration; // refactor: remove since we have countdown?
+
 @property NSObject <LASesionDelegate> *delegate;
 
 @property float alcoholToPromilleCoefficient;
 @property float pressureCorrectionCoefficient;
 @property float standardPressureForCorrection;
+
+// should-not-really-be-public properties
+@property LAConnectProtocolVersion protocolVersion;
+@property (readonly) BOOL protocolVersionIsRecognized;
 
 - (void)updateWithCountdown:(float)countdown;
 - (void)updateWithPressure:(int)pressure;
@@ -49,6 +64,7 @@ extern NSString *const ConnectManagerDidRecieveSessionEvent;
 - (void)updateWithDeviceID:(int)deviceID;
 - (void)updateWithShortDeviceID:(int)shortDeviceID;
 - (void)updateWithBatteryLevel:(int)batteryLevel;
+- (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion;
 - (void)start;
 - (void)stop;
 

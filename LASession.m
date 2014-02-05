@@ -47,6 +47,8 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		_duration = 0;
 		
 		_missedMessagesInARow = 0;
+		
+		_protocolVersion = LAConnectProtocolVersionUnknown;
 	}
 	return self;
 }
@@ -145,6 +147,13 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
+- (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion {
+	
+	_protocolVersion = protocolVersion;
+	[self.delegate sessionDidUpdateProtocolVersion];
+}
+
+
 - (void)everySecondTick {
 	[self updateDuration];
 }
@@ -223,6 +232,15 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeMoreMissedMessagesThenAcceptable userInfo:nil];
 		[self finishWithError:error];
 	}
+}
+
+
+#pragma mark - Protocol Version
+
+
+- (BOOL)protocolVersionIsRecognized {
+	
+	return (_protocolVersion != LAConnectProtocolVersionUnknown);
 }
 
 
