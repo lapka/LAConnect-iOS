@@ -9,7 +9,6 @@
 #import "Airlift.h"
 
 #define respiteTime 5.0
-#define countdownToSeconds_coefficient 0.25
 
 #define default_alcoholToPromille_coefficient 600
 #define default_pressureCorrection_coefficient 0.025
@@ -23,15 +22,15 @@ NSString *const ConnectManagerDidUpdateState = @"ConnectManagerDidUpdateState";
 NSString *const ConnectManagerDidFinishSessionWithMeasure = @"ConnectManagerDidFinishSessionWithMeasure";
 NSString *const ConnectManagerDidFinishSessionWithDeviceID = @"ConnectManagerDidFinishSessionWithDeviceID";
 NSString *const ConnectManagerDidFinishSessionWithError = @"ConnectManagerDidFinishSessionWithError";
+NSString *const ConnectManagerDidUpdateSessionDuration = @"ConnectManagerDidUpdateSessionDuration";
 NSString *const ConnectManagerDidUpdateBatteryLevel = @"ConnectManagerDidUpdateBatteryLevel";
-NSString *const ConnectManagerDidUpdateCountdown = @"ConnectManagerDidUpdateCountdown";
 NSString *const ConnectManagerDidUpdatePressure = @"ConnectManagerDidUpdatePressure";
 
 
 typedef enum {
-	LAMarkerID_Countdown = AirWordValue_Marker_1,
-	LAMarkerID_Alcohol   = AirWordValue_Marker_2,
-	LAMarkerID_DeviceID  = AirWordValue_Marker_3
+	LAMarkerID_DeviceID_part = AirWordValue_Marker_1,
+	LAMarkerID_Alcohol		 = AirWordValue_Marker_2,
+	LAMarkerID_DeviceID_v1   = AirWordValue_Marker_3
 } LAMarkerID;
 
 
@@ -209,14 +208,7 @@ typedef enum {
 
 
 - (void)sessionDidUpdateDuration {
-	printf("\nLAConnectManager sessionDidUpdateDuration: %0.1f\n", _session.duration);
-}
-
-
-- (void)sessionDidUpdateCountdown {
-	printf("\nLAConnectManager sessionDidUpdateCountdown: %.1f\n", _session.countdown);
-	
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateCountdown object:[NSNumber numberWithFloat:_session.countdown]];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateSessionDuration object:nil];
 }
 
 
@@ -248,14 +240,6 @@ typedef enum {
 }
 
 
-- (void)sessionDidUpdateShortDeviceID {
-	
-	NSString *description = [NSString stringWithFormat:@"Short DeviceID: %d", _session.shortDeviceID];
-	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-}
-
-
 - (void)sessionDidUpdateBatteryLevel {
 	printf("\nLAConnectManager sessionDidUpdateBatteryLevel: %d\n", [_session batteryLevel]);
 	
@@ -264,6 +248,15 @@ typedef enum {
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateBatteryLevel object:@(_session.batteryLevel)];
+}
+
+
+- (void)sessionDidUpdateProtocolVersion {
+	printf("\nLAConnectManager sessionDidUpdateProtocolVersion: %d\n", [_session protocolVersion]);
+	
+	NSString *description = [NSString stringWithFormat:@"Protocol Version: %d", _session.protocolVersion];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
 
@@ -313,19 +306,17 @@ typedef enum {
 - (void)airListenerDidReceiveMessage:(AirMessage *)message {
 	
 	if (self.state == LAConnectManagerStateReady) {
-		if (message.markerID == LAMarkerID_Countdown && message.followedBySameMarker) {
+		if (message.markerID == LAMarkerID_DeviceID_part && message.followedBySameMarker) {
 			[self updateWithState:LAConnectManagerStateMeasure];
 		}
 	}
 	
 	if (self.state == LAConnectManagerStateMeasure) {
 		
-		if (message.markerID == LAMarkerID_Countdown) {
-			float countdownInSeconds = [self countdownToSeconds:message.countdown];
-			[_session updateWithCountdown:countdownInSeconds];
+		if (message.markerID == LAMarkerID_DeviceID_part) {
 			
-			// trace raw countdown
-			NSString *description = [NSString stringWithFormat:@"Countdown: %d", message.countdown];
+			// trace device id parts
+			NSString *description = [NSString stringWithFormat:@"Device ID part: %d", message.deviceID_part];
 			LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 			[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 		}
@@ -338,7 +329,6 @@ typedef enum {
 				if (deltaIsInExpectedWindow) {
 					
 					[_session updateWithPressure:message.pressure];
-					[_session updateWithShortDeviceID:message.shortDeviceID];
 					[_session updateWithBatteryLevel:message.batteryLevel];
 					[_session updateWithRawAlcohol:message.alcohol];
 					
@@ -351,10 +341,10 @@ typedef enum {
 			self.lastAlcoholMessageTime = [message.time copy];
 		}
 		
-		if (message.markerID == LAMarkerID_DeviceID) {
+		if (message.markerID == LAMarkerID_DeviceID_v1) {
 			
 			[_session updateWithBatteryLevel:message.batteryLevel];
-			[_session updateWithDeviceID:message.deviceID];
+			[_session updateWithDeviceID:message.deviceID_v1];
 		}
 	}
 }
@@ -373,12 +363,6 @@ typedef enum {
 
 
 #pragma mark - Utilities
-
-
-- (float)countdownToSeconds:(float)countdown {
-	
-	return countdown * countdownToSeconds_coefficient;
-}
 
 
 - (NSString *)stateToString:(LAConnectManagerState)state {

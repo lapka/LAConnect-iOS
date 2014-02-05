@@ -77,16 +77,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-- (void)updateWithCountdown:(float)countdown {
-	
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
-	
-	_countdown = countdown;
-	[self.delegate sessionDidUpdateCountdown];
-}
-
-
 - (void)updateWithPressure:(int)pressure {
 	
 	[self restartMissedMessageTimer];
@@ -122,16 +112,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-- (void)updateWithShortDeviceID:(int)shortDeviceID {
-	
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
-	
-	_shortDeviceID = shortDeviceID;
-	[self.delegate sessionDidUpdateShortDeviceID];
-}
-
-
 - (void)updateWithBatteryLevel:(int)batteryLevel {
 	
 	[self restartMissedMessageTimer];
@@ -158,6 +138,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateDuration {
 	_duration = _framesSinceStart / _framesFrequency;
+	[self.delegate sessionDidUpdateDuration];
 }
 
 

@@ -12,7 +12,7 @@
 @implementation AirMessage (ParsedData)
 
 
-- (int)countdown {
+- (int)deviceID_part {
 	
 	return bit_array_get_word8(_data, 0);
 }
@@ -40,7 +40,7 @@
 }
 
 
-- (int)deviceID {
+- (int)deviceID_v1 {
 	
 	BIT_ARRAY *device_id_bits = bit_array_create(22);
 	bit_array_copy(device_id_bits, 0, _data, 2, 22);
@@ -48,17 +48,6 @@
 	bit_array_free(device_id_bits);
 	
 	return deviceID;
-}
-
-
-- (int)shortDeviceID {
-	
-	BIT_ARRAY *short_device_id_bits = bit_array_create(6);
-	bit_array_copy(short_device_id_bits, 0, _data, 2, 6);
-	int shortDeviceID = bit_array_get_word8(short_device_id_bits, 0);
-	bit_array_free(short_device_id_bits);
-	
-	return shortDeviceID;
 }
 
 

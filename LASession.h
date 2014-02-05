@@ -26,11 +26,10 @@ typedef enum {
 - (void)sessionDidFinishWithDeviceID;
 - (void)sessionDidFinishWithError:(LAError *)error;
 
-- (void)sessionDidUpdateCountdown;
+- (void)sessionDidUpdateDuration;
 - (void)sessionDidUpdatePressure;
 - (void)sessionDidUpdateAlcohol;
 - (void)sessionDidUpdateDeviceID;
-- (void)sessionDidUpdateShortDeviceID;
 - (void)sessionDidUpdateBatteryLevel;
 - (void)sessionDidUpdateProtocolVersion;
 
@@ -43,10 +42,8 @@ typedef enum {
 @property int rawAlcohol;
 @property int pressure;
 @property int deviceID;
-@property int shortDeviceID;
 @property int batteryLevel;
-@property float countdown;
-@property float duration; // refactor: remove since we have countdown?
+@property float duration;
 @property float framesSinceStart;
 @property float framesFrequency;
 
@@ -60,11 +57,9 @@ typedef enum {
 @property LAConnectProtocolVersion protocolVersion;
 @property (readonly) BOOL protocolVersionIsRecognized;
 
-- (void)updateWithCountdown:(float)countdown;
 - (void)updateWithPressure:(int)pressure;
 - (void)updateWithRawAlcohol:(int)rawAlcohol;
 - (void)updateWithDeviceID:(int)deviceID;
-- (void)updateWithShortDeviceID:(int)shortDeviceID;
 - (void)updateWithBatteryLevel:(int)batteryLevel;
 - (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion;
 - (void)incrementFramesCounter;
