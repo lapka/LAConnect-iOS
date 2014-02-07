@@ -123,7 +123,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	[_compositeDeviceID addDeviceIDPart:deviceIDPart withPartDescription:partDescription];
 	
 	if (_compositeDeviceID.isComplete) {
-		printf("\nCompositeDeviceID is complete\n%s\n", _compositeDeviceID.description.UTF8String);
+		printf("\nCompositeDeviceID is complete\n\n%s\n\n", _compositeDeviceID.description.UTF8String);
 	}
 }
 

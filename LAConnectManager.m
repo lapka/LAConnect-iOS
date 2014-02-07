@@ -36,7 +36,6 @@ typedef enum {
 
 @interface LAConnectManager ()
 @property (strong) NSTimer *respiteTimer;
-@property (strong) NSDate *lastAlcoholMessageTime;
 @end
 
 
@@ -325,22 +324,21 @@ typedef enum {
 		
 		if (message.markerID == LAMarkerID_Alcohol) {
 			
-			if (_lastAlcoholMessageTime) {
-				NSTimeInterval delta = [[NSDate date] timeIntervalSinceDate:_lastAlcoholMessageTime];
-				BOOL deltaIsInExpectedWindow = (delta > 0.1) && (delta < 3.3);
-				if (deltaIsInExpectedWindow) {
-					
-					[_session updateWithPressure:message.pressure];
-					[_session updateWithBatteryLevel:message.batteryLevel];
-					[_session updateWithRawAlcohol:message.alcohol];
-					
-					// trace raw alcohol
-					NSString *description = [NSString stringWithFormat:@"Alcohol: %d", message.alcohol];
-					LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
-					[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-				}
+			if ([message passedAdditionalIntegrityControl]) {
+				_session.protocolVersion = LAConnectProtocolVersion_2;
+				
+			} else {
+				_session.protocolVersion = LAConnectProtocolVersion_1;
 			}
-			self.lastAlcoholMessageTime = [message.time copy];
+			
+			[_session updateWithPressure:message.pressure];
+			[_session updateWithBatteryLevel:message.batteryLevel];
+			[_session updateWithRawAlcohol:message.alcohol];
+			
+			// trace raw alcohol
+			NSString *description = [NSString stringWithFormat:@"Alcohol: %d", message.alcohol];
+			LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+			[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 		}
 		
 		if (message.markerID == LAMarkerID_DeviceID_v1) {

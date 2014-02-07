@@ -14,8 +14,12 @@
 
 @property (readonly) int deviceID_part;
 @property (readonly) int deviceID_v1;
+
 @property (readonly) int pressure;
 @property (readonly) int alcohol;
 @property (readonly) int batteryLevel;
+@property (readonly) BOOL finalPressureIsInAcceptableRange;
+
+- (BOOL)passedAdditionalIntegrityControl;
 
 @end
