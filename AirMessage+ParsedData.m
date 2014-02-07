@@ -67,7 +67,7 @@
 }
 
 
-- (BOOL)finalPressureIsAboveAcceptableThreshold {
+- (BOOL)finalPressureIsSufficient {
 	
 	uint8_t finalPressureIsAboveAcceptableThreshold_flag = bit_array_get_bit(_data, 2);
 	BOOL finalPressureIsAboveAcceptableThreshold = (finalPressureIsAboveAcceptableThreshold_flag == 1);

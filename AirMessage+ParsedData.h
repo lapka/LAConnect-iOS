@@ -18,7 +18,7 @@
 @property (readonly) int pressure;
 @property (readonly) int alcohol;
 @property (readonly) int batteryLevel;
-@property (readonly) BOOL finalPressureIsAboveAcceptableThreshold;
+@property (readonly) BOOL finalPressureIsSufficient;
 
 - (BOOL)passedAdditionalIntegrityControl;
 

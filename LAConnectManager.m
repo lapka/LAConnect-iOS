@@ -290,6 +290,16 @@ typedef enum {
 }
 
 
+- (void)sessionDidUpdateFinalPressureFlag {
+	
+	printf("\nLAConnectManager sessionDidUpdateFinalPressureFlag: %s\n", _session.finalPressureIsSufficient ? "YES" : "NO");
+	
+	NSString *description = [NSString stringWithFormat:@"Final pressure is sufficient: %@", _session.finalPressureIsSufficient ? @"YES" : @"NO"];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+}
+
+
 - (void)sessionDidFinishWithMeasure:(LAMeasure *)measure {
 	NSLog(@"LAConnectManager sessionDidFinishWithMeasure");
 	
@@ -301,6 +311,11 @@ typedef enum {
 	NSString *description = [NSString stringWithFormat:@"Your alcohol: %.2f%% BAC", _session.alcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	if (_session.protocolVersion == LAConnectProtocolVersion_2 && !_session.finalPressureIsSufficient) {
+		LASessionEvent *event = [LASessionEvent eventWithDescription:@"(Too short)" time:_session.duration];
+		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	}
 	
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithMeasure object:measure];
 	[self updateWithState:LAConnectManagerStateRespite];
@@ -365,15 +380,14 @@ typedef enum {
 			
 			LAConnectProtocolVersion protocolVersion = [message passedAdditionalIntegrityControl] ? LAConnectProtocolVersion_2 : LAConnectProtocolVersion_1;
 			
+			if (protocolVersion == LAConnectProtocolVersion_2)
+				[_session updateWithFinalPressureFlag:message.finalPressureIsSufficient];
+			
 			[_session updateWithProtocolVersion:protocolVersion];
 			[_session updateWithPressure:message.pressure];
 			[_session updateWithBatteryLevel:message.batteryLevel];
 			[_session updateWithRawAlcohol:message.alcohol];
-			
-			if (protocolVersion == LAConnectProtocolVersion_2 && !message.finalPressureIsAboveAcceptableThreshold)
-				[_session finishWithLowBlowError];
-			else
-				[_session finishWithMeasure];
+			[_session finishWithMeasure];
 		}
 		
 		if (message.markerID == LAMarkerID_DeviceID_v1) {

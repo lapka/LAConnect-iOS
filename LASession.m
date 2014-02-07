@@ -46,6 +46,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		
 		_protocolVersion = LAConnectProtocolVersionUnknown;
 		_compositeDeviceID = [LADeviceID new];
+		_finalPressureIsSufficient = NO;
 	}
 	return self;
 }
@@ -159,6 +160,13 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	_protocolVersion = protocolVersion;
 	[self.delegate sessionDidUpdateProtocolVersion];
+}
+
+
+- (void)updateWithFinalPressureFlag:(BOOL)finalPressureIsSufficient {
+	
+	_finalPressureIsSufficient = finalPressureIsSufficient;
+	[self.delegate sessionDidUpdateFinalPressureFlag];
 }
 
 

@@ -34,6 +34,7 @@ typedef enum {
 - (void)sessionDidUpdateDeviceID;
 - (void)sessionDidUpdateBatteryLevel;
 - (void)sessionDidUpdateProtocolVersion;
+- (void)sessionDidUpdateFinalPressureFlag;
 - (void)sessionDidUpdateDeviceIDPart:(BIT_ARRAY *)deviceIDPart;
 
 @end
@@ -52,6 +53,7 @@ typedef enum {
 
 @property NSObject <LASesionDelegate> *delegate;
 @property LADeviceID *compositeDeviceID;
+@property BOOL finalPressureIsSufficient;
 
 @property float alcoholToPromilleCoefficient;
 @property float pressureCorrectionCoefficient;
@@ -74,6 +76,7 @@ typedef enum {
 - (void)updateWithDeviceIDPart:(BIT_ARRAY *)deviceIDPart;
 - (void)updateWithBatteryLevel:(int)batteryLevel;
 - (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion;
+- (void)updateWithFinalPressureFlag:(BOOL)finalPressureIsSufficient;
 - (void)incrementFramesCounter;
 
 @end
