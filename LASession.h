@@ -33,6 +33,7 @@ typedef enum {
 - (void)sessionDidUpdateDeviceID;
 - (void)sessionDidUpdateBatteryLevel;
 - (void)sessionDidUpdateProtocolVersion;
+- (void)sessionDidUpdateDeviceIDPart:(BIT_ARRAY *)deviceIDPart;
 
 @end
 
@@ -59,6 +60,13 @@ typedef enum {
 @property LAConnectProtocolVersion protocolVersion;
 @property (readonly) BOOL protocolVersionIsRecognized;
 
+- (void)start;
+- (void)stop;
+- (void)finishWithMeasure;
+- (void)finishWithDeviceID;
+- (void)finishWithLowBlowError;
+- (void)finishWithError:(LAError *)error;
+
 - (void)updateWithPressure:(int)pressure;
 - (void)updateWithRawAlcohol:(int)rawAlcohol;
 - (void)updateWithDeviceID:(int)deviceID;
@@ -66,8 +74,6 @@ typedef enum {
 - (void)updateWithBatteryLevel:(int)batteryLevel;
 - (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion;
 - (void)incrementFramesCounter;
-- (void)start;
-- (void)stop;
 
 - (void)restartMissedMessageTimer;
 

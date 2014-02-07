@@ -223,10 +223,15 @@ typedef enum {
 
 
 - (void)sessionDidUpdateAlcohol {
-	printf("\nLAConnectManager sessionDidUpdateAlcohol: %.2f%% BAC\n", [_session alcohol]);
+	printf("\nLAConnectManager sessionDidUpdateAlcohol: %d (%.2f%% BAC)\n", _session.rawAlcohol, _session.alcohol);
 	
-	NSString *description = [NSString stringWithFormat:@"Bac: %.2f%%", _session.alcohol];
+	// trace raw alcohol
+	NSString *description = [NSString stringWithFormat:@"Raw alcohol: %d", _session.rawAlcohol];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	description = [NSString stringWithFormat:@"Bac: %.2f%%", _session.alcohol];
+	event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
@@ -236,6 +241,20 @@ typedef enum {
 	NSString *description = [NSString stringWithFormat:@"DeviceID: %d", _session.deviceID];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+}
+
+
+- (void)sessionDidUpdateDeviceIDPart:(BIT_ARRAY *)deviceIDPart {
+	
+	char *deviceIDPart_str = malloc(sizeof(char) * deviceIDPartLength);
+	bit_array_to_str_rev(deviceIDPart, deviceIDPart_str);
+	uint8_t deviceIDPart_int = bit_array_get_word8(deviceIDPart, 0);
+	
+	NSString *description = [NSString stringWithFormat:@"DeviceID part: %s (%d)", deviceIDPart_str, deviceIDPart_int];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	free(deviceIDPart_str);
 }
 
 
@@ -253,7 +272,7 @@ typedef enum {
 - (void)sessionDidUpdateProtocolVersion {
 	printf("\nLAConnectManager sessionDidUpdateProtocolVersion: %d\n", [_session protocolVersion]);
 	
-	NSString *description = [NSString stringWithFormat:@"Protocol Version: %d", _session.protocolVersion];
+	NSString *description = [NSString stringWithFormat:@"Protocol Version: #%d", _session.protocolVersion];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
@@ -313,38 +332,29 @@ typedef enum {
 	if (self.state == LAConnectManagerStateMeasure) {
 		
 		if (message.markerID == LAMarkerID_DeviceID_part) {
-			
 			[_session updateWithDeviceIDPart:message.data];
-			
-			// trace device id parts
-			NSString *description = [NSString stringWithFormat:@"Device ID part: %d", message.deviceID_part];
-			LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
-			[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 		}
 		
 		if (message.markerID == LAMarkerID_Alcohol) {
 			
-			if ([message passedAdditionalIntegrityControl]) {
-				_session.protocolVersion = LAConnectProtocolVersion_2;
-				
-			} else {
-				_session.protocolVersion = LAConnectProtocolVersion_1;
-			}
+			LAConnectProtocolVersion protocolVersion = [message passedAdditionalIntegrityControl] ? LAConnectProtocolVersion_2 : LAConnectProtocolVersion_1;
 			
+			[_session updateWithProtocolVersion:protocolVersion];
 			[_session updateWithPressure:message.pressure];
 			[_session updateWithBatteryLevel:message.batteryLevel];
 			[_session updateWithRawAlcohol:message.alcohol];
 			
-			// trace raw alcohol
-			NSString *description = [NSString stringWithFormat:@"Alcohol: %d", message.alcohol];
-			LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
-			[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+			if (protocolVersion == LAConnectProtocolVersion_2 && !message.finalPressureIsAboveAcceptableThreshold)
+				[_session finishWithLowBlowError];
+			else
+				[_session finishWithMeasure];
 		}
 		
 		if (message.markerID == LAMarkerID_DeviceID_v1) {
 			
 			[_session updateWithBatteryLevel:message.batteryLevel];
 			[_session updateWithDeviceID:message.deviceID_v1];
+			[_session finishWithDeviceID];
 		}
 	}
 }

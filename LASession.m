@@ -39,6 +39,10 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 @implementation LASession
 
 
+#pragma mark -
+#pragma mark Lifecycle
+
+
 - (id)init {
 	if ((self = [super init])) {
 		NSLog(@"LASession init");
@@ -64,6 +68,12 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
+
+
+#pragma mark -
+#pragma mark Start / Finish
+
+
 - (void)start {
 	NSLog(@"LASession start");
 	
@@ -79,6 +89,44 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	[self invalidateTimers];
 }
+
+
+- (void)finishWithMeasure {
+	
+	[self invalidateTimers];
+	
+	LAMeasure *measure = [[LAMeasure alloc] initWithAlcohol:_alcohol date:[NSDate date]];
+	[self.delegate sessionDidFinishWithMeasure:measure];
+}
+
+
+- (void)finishWithDeviceID {
+	
+	[self invalidateTimers];
+	[self.delegate sessionDidFinishWithDeviceID];
+}
+
+
+- (void)finishWithLowBlowError {
+	
+	LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeFinalPressureBelowAcceptableThreshold userInfo:nil];
+	[self finishWithError:error];
+}
+
+
+- (void)finishWithError:(LAError *)error {
+	printf("\n");
+	NSLog(@"LASession finishWithError: %@", [error localizedDescription]);
+	
+	[self invalidateTimers];
+	[self.delegate sessionDidFinishWithError:error];
+}
+
+
+
+
+#pragma mark -
+#pragma mark Update
 
 
 - (void)updateWithPressure:(int)pressure {
@@ -99,8 +147,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	_rawAlcohol = rawAlcohol;
 	_alcohol = [self bacValueFromRawAlcohol:rawAlcohol withPressure:_pressure];
 	[self.delegate sessionDidUpdateAlcohol];
-	
-	[self finishWithMeasure];
 }
 
 
@@ -111,8 +157,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	_deviceID = deviceID;
 	[self.delegate sessionDidUpdateDeviceID];
-	
-	[self finishWithDeviceID];
 }
 
 
@@ -121,6 +165,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	LADeviceIDPartDescription partDescription = [self deviceIDPartDescriptionForFramesSinceStart:_framesSinceStart];
 	printf("\n{%d,%d}\n", partDescription.deviceIDIndex, partDescription.partIndex);
 	[_compositeDeviceID addDeviceIDPart:deviceIDPart withPartDescription:partDescription];
+	[self.delegate sessionDidUpdateDeviceIDPart:deviceIDPart];
 	
 	if (_compositeDeviceID.isComplete) {
 		printf("\nCompositeDeviceID is complete\n\n%s\n\n", _compositeDeviceID.description.UTF8String);
@@ -158,32 +203,10 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-- (void)finishWithMeasure {
-	
-	[self invalidateTimers];
-	
-	LAMeasure *measure = [[LAMeasure alloc] initWithAlcohol:_alcohol date:[NSDate date]];
-	[self.delegate sessionDidFinishWithMeasure:measure];
-}
 
 
-- (void)finishWithDeviceID {
-	
-	[self invalidateTimers];
-	[self.delegate sessionDidFinishWithDeviceID];
-}
-
-
-- (void)finishWithError:(LAError *)error {
-	printf("\n");
-	NSLog(@"LASession finishWithError: %@", [error localizedDescription]);
-	
-	[self invalidateTimers];
-	[self.delegate sessionDidFinishWithError:error];
-}
-
-
-#pragma mark - Timers
+#pragma mark -
+#pragma mark Timers
 
 
 - (void)scheduleTimers {
@@ -198,7 +221,10 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-#pragma mark - Missed Message Timer
+
+
+#pragma mark -
+#pragma mark Missed Message Timer
 
 
 - (void)restartMissedMessageTimer {
@@ -225,7 +251,10 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-#pragma mark - Protocol Version
+
+
+#pragma mark -
+#pragma mark Protocol Version
 
 
 - (BOOL)protocolVersionIsRecognized {
@@ -234,7 +263,10 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
-#pragma mark - Utilities
+
+
+#pragma mark -
+#pragma mark Utilities
 
 
 - (float)bacValueFromRawAlcohol:(int)rawAlcohol withPressure:(int)pressure {

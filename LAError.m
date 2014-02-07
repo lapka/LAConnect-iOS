@@ -20,6 +20,10 @@
 			localizedDescription = NSLocalizedString(@"More missed messages then acceptable.", "LAConnect Error Description");
 			break;
 			
+		case LAErrorCodeFinalPressureBelowAcceptableThreshold:
+			localizedDescription = NSLocalizedString(@"Final pressure is below acceptable threshold.", "LAConnect Error Description");
+			break;
+			
 		default:
 			break;
 	}

@@ -67,12 +67,12 @@
 }
 
 
-- (BOOL)finalPressureIsInAcceptableRange {
+- (BOOL)finalPressureIsAboveAcceptableThreshold {
 	
-	uint8_t finalPressureIsInAcceptableRange_flag = bit_array_get_bit(_data, 2);
-	BOOL finalPressureIsInAcceptableRange = (finalPressureIsInAcceptableRange_flag == 1);
+	uint8_t finalPressureIsAboveAcceptableThreshold_flag = bit_array_get_bit(_data, 2);
+	BOOL finalPressureIsAboveAcceptableThreshold = (finalPressureIsAboveAcceptableThreshold_flag == 1);
 	
-	return finalPressureIsInAcceptableRange;
+	return finalPressureIsAboveAcceptableThreshold;
 }
 
 
