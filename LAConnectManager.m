@@ -321,6 +321,13 @@ typedef enum {
 - (void)sessionDidFinishWithError:(LAError *)error {
 	NSLog(@"LAConnectManager sessionDidFinishWithError");
 	
+	LASessionEvent *event2 = [LASessionEvent eventWithDescription:@"Session finished\n--------------------------------\n" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event2];
+	
+	NSString *description = [NSString stringWithFormat:@"Error: %@", error.localizedDescription];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithError object:error];
 	[self updateWithState:LAConnectManagerStateRespite];
 	self.session = nil;

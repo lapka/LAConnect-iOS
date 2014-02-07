@@ -24,6 +24,10 @@
 			localizedDescription = NSLocalizedString(@"Final pressure is below acceptable threshold.", "LAConnect Error Description");
 			break;
 			
+		case LAErrorCodeSessionFalseStart:
+			localizedDescription = NSLocalizedString(@"Session false start recognized.", "LAConnect Error Description");
+			break;
+			
 		default:
 			break;
 	}

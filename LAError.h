@@ -11,7 +11,8 @@
 
 typedef enum {
 	LAErrorCodeMoreMissedMessagesThenAcceptable,
-	LAErrorCodeFinalPressureBelowAcceptableThreshold
+	LAErrorCodeFinalPressureBelowAcceptableThreshold,
+	LAErrorCodeSessionFalseStart
 } LAErrorCode;
 
 

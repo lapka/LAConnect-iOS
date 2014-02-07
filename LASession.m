@@ -32,7 +32,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 @property (strong) NSTimer *missedMessageTimer;
 @property (strong) NSDate *startTime;
 @property int missedMessagesInARow;
-
 @end
 
 
@@ -199,12 +198,43 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	_framesSinceStart++;
 	[self updateDuration];
+	[self checkIfSessionStillValid];
 }
 
 
 - (void)updateDuration {
 	_duration = _framesSinceStart / _framesFrequency;
 	[self.delegate sessionDidUpdateDuration];
+}
+
+
+
+
+#pragma mark -
+#pragma mark Session Validation
+
+
+- (void)checkIfSessionStillValid {
+	
+	if (![self isSessionStartConfirmed]) {
+		
+		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeSessionFalseStart userInfo:nil];
+		[self finishWithError:error];	
+	}
+}
+
+
+- (BOOL)isSessionStartConfirmed {
+	
+	BOOL confirmed = YES;
+	
+	int onePartReceived = 1;
+	int maximumFramesToReceiveThirdDeviceIDPart = 10;
+	if (_compositeDeviceID.receivedPartsCount <= onePartReceived && _framesSinceStart > maximumFramesToReceiveThirdDeviceIDPart) {
+		confirmed = NO;
+	}
+	
+	return confirmed;
 }
 
 
