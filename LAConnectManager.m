@@ -241,6 +241,10 @@ typedef enum {
 	NSString *description = [NSString stringWithFormat:@"DeviceID: %d", _session.deviceID];
 	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+	
+	if (_session.compositeDeviceID.isComplete && _session.compositeDeviceID.isCoincided) {
+		[_session updateWithProtocolVersion:LAConnectProtocolVersion_2];
+	}
 }
 
 
@@ -282,6 +286,13 @@ typedef enum {
 	NSLog(@"LAConnectManager sessionDidFinishWithMeasure");
 	
 	self.measure = measure;
+	
+	LASessionEvent *event2 = [LASessionEvent eventWithDescription:@"Session finished\n--------------------------------\n" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event2];
+	
+	NSString *description = [NSString stringWithFormat:@"Your alcohol: %.2f%% BAC", _session.alcohol];
+	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithMeasure object:measure];
 	[self updateWithState:LAConnectManagerStateRespite];
@@ -352,6 +363,7 @@ typedef enum {
 		
 		if (message.markerID == LAMarkerID_DeviceID_v1) {
 			
+			[_session updateWithProtocolVersion:LAConnectProtocolVersion_1];
 			[_session updateWithBatteryLevel:message.batteryLevel];
 			[_session updateWithDeviceID:message.deviceID_v1];
 			[_session finishWithDeviceID];

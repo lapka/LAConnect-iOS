@@ -169,6 +169,9 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	if (_compositeDeviceID.isComplete) {
 		printf("\nCompositeDeviceID is complete\n\n%s\n\n", _compositeDeviceID.description.UTF8String);
+		if (_compositeDeviceID.isCoincided) {
+			[self updateWithDeviceID:_compositeDeviceID.intValue];
+		}
 	}
 }
 
@@ -184,6 +187,8 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 
 - (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion {
+	
+	if (protocolVersion == _protocolVersion) return;
 	
 	_protocolVersion = protocolVersion;
 	[self.delegate sessionDidUpdateProtocolVersion];
