@@ -8,8 +8,6 @@
 
 #define minAcceptablePressure 3.0
 #define maxAcceptablePressure 6.0
-#define missedMessageDelay 0.3
-#define maxAcceptableMissedMessagesInARow 10
 #define finishTime 10.0
 
 #define framesPerDeviceIDParts 3
@@ -25,14 +23,8 @@
 #define word16_length 16
 #define word32_length 32
 
+
 NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidRecieveSessionEvent";
-
-
-@interface LASession ()
-@property (strong) NSTimer *missedMessageTimer;
-@property (strong) NSDate *startTime;
-@property int missedMessagesInARow;
-@end
 
 
 @implementation LASession
@@ -52,10 +44,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		_framesSinceStart = 0;
 		_framesFrequency = 10;
 		
-		_missedMessagesInARow = 0;
-		
 		_protocolVersion = LAConnectProtocolVersionUnknown;
-		
 		_compositeDeviceID = [LADeviceID new];
 	}
 	return self;
@@ -75,24 +64,17 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)start {
 	NSLog(@"LASession start");
-	
-	[self scheduleTimers];
-	self.startTime = [NSDate date];
-	
 	[self.delegate sessionDidStart];
 }
 
 
-- (void)stop {
-	NSLog(@"LASession stop");
-	
-	[self invalidateTimers];
+- (void)cancel {
+	NSLog(@"LASession cancel");
+	[self.delegate sessionDidCancel];
 }
 
 
 - (void)finishWithMeasure {
-	
-	[self invalidateTimers];
 	
 	LAMeasure *measure = [[LAMeasure alloc] initWithAlcohol:_alcohol date:[NSDate date]];
 	[self.delegate sessionDidFinishWithMeasure:measure];
@@ -101,7 +83,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)finishWithDeviceID {
 	
-	[self invalidateTimers];
 	[self.delegate sessionDidFinishWithDeviceID];
 }
 
@@ -117,7 +98,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	printf("\n");
 	NSLog(@"LASession finishWithError: %@", [error localizedDescription]);
 	
-	[self invalidateTimers];
 	[self.delegate sessionDidFinishWithError:error];
 }
 
@@ -130,18 +110,12 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithPressure:(int)pressure {
 	
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
-	
 	_pressure = pressure;
 	[self.delegate sessionDidUpdatePressure];
 }
 
 
 - (void)updateWithRawAlcohol:(int)rawAlcohol {
-	
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
 	
 	_rawAlcohol = rawAlcohol;
 	_alcohol = [self bacValueFromRawAlcohol:rawAlcohol withPressure:_pressure];
@@ -150,9 +124,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 
 - (void)updateWithDeviceID:(int)deviceID {
-	
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
 	
 	_deviceID = deviceID;
 	[self.delegate sessionDidUpdateDeviceID];
@@ -176,9 +147,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 
 - (void)updateWithBatteryLevel:(int)batteryLevel {
-	
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
 	
 	_batteryLevel = batteryLevel;
 	[self.delegate sessionDidUpdateBatteryLevel];
@@ -257,54 +225,6 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	BOOL isSessionMissedFinalMessage = (_framesSinceStart > maxFramesSinceStart);
 	return isSessionMissedFinalMessage;
-}
-
-
-
-
-#pragma mark -
-#pragma mark Timers
-
-
-- (void)scheduleTimers {
-	
-}
-
-
-- (void)invalidateTimers {
-	
-	[self.missedMessageTimer invalidate];
-	self.missedMessageTimer = nil;
-}
-
-
-
-
-#pragma mark -
-#pragma mark Missed Message Timer
-
-
-- (void)restartMissedMessageTimer {
-	// refactor: don't forget to do something about
-	
-	[self.missedMessageTimer invalidate];
-	self.missedMessageTimer = [NSTimer scheduledTimerWithTimeInterval:missedMessageDelay target:self selector:@selector(handleMissedMessage) userInfo:nil repeats:NO];
-}
-
-
-- (void)handleMissedMessage {
-	
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow++;
-	
-	NSString *description = [NSString stringWithFormat:@"Missed message (%d)", _missedMessagesInARow];
-	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-	
-	if (_missedMessagesInARow > maxAcceptableMissedMessagesInARow) {
-		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeSessionDidMissFinish userInfo:nil];
-		[self finishWithError:error];
-	}
 }
 
 

@@ -23,6 +23,7 @@ typedef enum {
 @protocol LASesionDelegate <NSObject>
 
 - (void)sessionDidStart;
+- (void)sessionDidCancel;
 - (void)sessionDidFinishWithMeasure:(LAMeasure *)measure;
 - (void)sessionDidFinishWithDeviceID;
 - (void)sessionDidFinishWithError:(LAError *)error;
@@ -61,7 +62,7 @@ typedef enum {
 @property (readonly) BOOL protocolVersionIsRecognized;
 
 - (void)start;
-- (void)stop;
+- (void)cancel;
 - (void)finishWithMeasure;
 - (void)finishWithDeviceID;
 - (void)finishWithLowBlowError;
@@ -74,7 +75,5 @@ typedef enum {
 - (void)updateWithBatteryLevel:(int)batteryLevel;
 - (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion;
 - (void)incrementFramesCounter;
-
-- (void)restartMissedMessageTimer;
 
 @end

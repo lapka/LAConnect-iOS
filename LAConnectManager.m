@@ -145,7 +145,7 @@ typedef enum {
 		NSLog(@"LAConnectManager state: %@", [self stateToString:self.state]);
 		
 		[_airListener stopListen];
-		[_session stop];
+		[_session cancel];
 		self.session = nil;
 		
 		[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidUpdateState object:nil];
@@ -202,6 +202,14 @@ typedef enum {
 	NSLog(@"LAConnectManager sessionDidStart");
 	
 	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Session started" time:_session.duration];
+	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
+}
+
+
+- (void)sessionDidCancel {
+	NSLog(@"LAConnectManager sessionDidCancel");
+	
+	LASessionEvent *event = [LASessionEvent eventWithDescription:@"Session canceled" time:_session.duration];
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 }
 
