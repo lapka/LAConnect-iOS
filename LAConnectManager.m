@@ -315,6 +315,8 @@ typedef enum {
 		
 		if (message.markerID == LAMarkerID_DeviceID_part) {
 			
+			[_session updateWithDeviceIDPart:message.data];
+			
 			// trace device id parts
 			NSString *description = [NSString stringWithFormat:@"Device ID part: %d", message.deviceID_part];
 			LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_session.duration];

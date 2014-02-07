@@ -5,6 +5,7 @@
 
 #import <Foundation/Foundation.h>
 #import "LAMeasure.h"
+#import "LADeviceID.h"
 #import "LAError.h"
 #import "bit_array.h"
 
@@ -48,6 +49,7 @@ typedef enum {
 @property float framesFrequency;
 
 @property NSObject <LASesionDelegate> *delegate;
+@property LADeviceID *compositeDeviceID;
 
 @property float alcoholToPromilleCoefficient;
 @property float pressureCorrectionCoefficient;
@@ -60,6 +62,7 @@ typedef enum {
 - (void)updateWithPressure:(int)pressure;
 - (void)updateWithRawAlcohol:(int)rawAlcohol;
 - (void)updateWithDeviceID:(int)deviceID;
+- (void)updateWithDeviceIDPart:(BIT_ARRAY *)deviceIDPart;
 - (void)updateWithBatteryLevel:(int)batteryLevel;
 - (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion;
 - (void)incrementFramesCounter;

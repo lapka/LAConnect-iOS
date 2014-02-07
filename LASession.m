@@ -12,6 +12,8 @@
 #define maxAcceptableMissedMessagesInARow 10
 #define finishTime 10.0
 
+#define framesPerDeviceIDParts 3
+
 #define battery_level_info_byte_start_index 4
 #define battery_level_bits_count 4
 #define alcohol_bits_count 12
@@ -50,6 +52,8 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		_missedMessagesInARow = 0;
 		
 		_protocolVersion = LAConnectProtocolVersionUnknown;
+		
+		_compositeDeviceID = [LADeviceID new];
 	}
 	return self;
 }
@@ -109,6 +113,18 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	[self.delegate sessionDidUpdateDeviceID];
 	
 	[self finishWithDeviceID];
+}
+
+
+- (void)updateWithDeviceIDPart:(BIT_ARRAY *)deviceIDPart {
+	
+	LADeviceIDPartDescription partDescription = [self deviceIDPartDescriptionForFramesSinceStart:_framesSinceStart];
+	printf("\n{%d,%d}\n", partDescription.deviceIDIndex, partDescription.partIndex);
+	[_compositeDeviceID addDeviceIDPart:deviceIDPart withPartDescription:partDescription];
+	
+	if (_compositeDeviceID.isComplete) {
+		printf("\nCompositeDeviceID is complete\n%s\n", _compositeDeviceID.description.UTF8String);
+	}
 }
 
 
@@ -233,6 +249,19 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	float alcoholInBAC = alcoholInPromille / 10;
 	return alcoholInBAC;
+}
+
+
+- (LADeviceIDPartDescription)deviceIDPartDescriptionForFramesSinceStart:(float)framesSinceStart {
+	
+	int deviceIDPartsSinceStart = round(framesSinceStart / framesPerDeviceIDParts);
+	int partIndexSinceStart = deviceIDPartsSinceStart - 1;
+	
+	LADeviceIDPartDescription partDescription;
+	partDescription.partIndex = partIndexSinceStart % deviceIDPartsPerID;
+	partDescription.deviceIDIndex = floor(partIndexSinceStart / deviceIDPartsPerID);
+	
+	return partDescription;
 }
 
 
