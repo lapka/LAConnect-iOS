@@ -16,16 +16,16 @@
 	
 	switch (self.code) {
 			
-		case LAErrorCodeMoreMissedMessagesThenAcceptable:
-			localizedDescription = NSLocalizedString(@"More missed messages then acceptable.", "LAConnect Error Description");
+		case LAErrorCodeSessionDidMissFinish:
+			localizedDescription = NSLocalizedString(@"Session did miss finish.", "LAConnect Error Description");
 			break;
 			
 		case LAErrorCodeFinalPressureBelowAcceptableThreshold:
 			localizedDescription = NSLocalizedString(@"Final pressure is below acceptable threshold.", "LAConnect Error Description");
 			break;
 			
-		case LAErrorCodeSessionFalseStart:
-			localizedDescription = NSLocalizedString(@"Session false start recognized.", "LAConnect Error Description");
+		case LAErrorCodeSessionDidFalseStart:
+			localizedDescription = NSLocalizedString(@"Session did false start.", "LAConnect Error Description");
 			break;
 			
 		default:

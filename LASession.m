@@ -198,7 +198,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	_framesSinceStart++;
 	[self updateDuration];
-	[self checkIfSessionStillValid];
+	[self checkIfStillValid];
 }
 
 
@@ -214,17 +214,22 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 #pragma mark Session Validation
 
 
-- (void)checkIfSessionStillValid {
+- (void)checkIfStillValid {
 	
-	if (![self isSessionStartConfirmed]) {
+	if (![self isStartConfirmed]) {
 		
-		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeSessionFalseStart userInfo:nil];
-		[self finishWithError:error];	
+		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeSessionDidFalseStart userInfo:nil];
+		[self finishWithError:error];
+		
+	} else if ([self isMissedFinalMessage]) {
+		
+		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeSessionDidMissFinish userInfo:nil];
+		[self finishWithError:error];
 	}
 }
 
 
-- (BOOL)isSessionStartConfirmed {
+- (BOOL)isStartConfirmed {
 	
 	BOOL confirmed = YES;
 	
@@ -235,6 +240,23 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	}
 	
 	return confirmed;
+}
+
+
+- (BOOL)isMissedFinalMessage {
+	
+	int framesPerShortMessage = 3;
+	int framesPerLongMessage = 9;
+	int maxShortMessagesDeviceCanSend = 13;
+	int safeFramesBuffer = 2;
+	
+	int maxFramesToReceiveThirdFinalMessage = 3 * framesPerLongMessage + maxShortMessagesDeviceCanSend * framesPerShortMessage + safeFramesBuffer;
+	int maxFramesToReceiveFifthFinalMessage = 5 * framesPerLongMessage + maxShortMessagesDeviceCanSend * framesPerShortMessage + safeFramesBuffer;
+	
+	int maxFramesSinceStart = (_protocolVersion == LAConnectProtocolVersion_2) ? maxFramesToReceiveThirdFinalMessage : maxFramesToReceiveFifthFinalMessage;
+	
+	BOOL isSessionMissedFinalMessage = (_framesSinceStart > maxFramesSinceStart);
+	return isSessionMissedFinalMessage;
 }
 
 
@@ -280,7 +302,7 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	
 	if (_missedMessagesInARow > maxAcceptableMissedMessagesInARow) {
-		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeMoreMissedMessagesThenAcceptable userInfo:nil];
+		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeSessionDidMissFinish userInfo:nil];
 		[self finishWithError:error];
 	}
 }
