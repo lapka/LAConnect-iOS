@@ -10,7 +10,8 @@
 
 @property float alcohol;
 @property (strong) NSDate *date;
+@property BOOL isAccurate;
 
-- (id)initWithAlcohol:(float)alcohol date:(NSDate *)date;
+- (id)initWithAlcohol:(float)alcohol date:(NSDate *)date isAccurate:(BOOL)isAccurate;
 
 @end

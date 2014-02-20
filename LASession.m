@@ -77,7 +77,11 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)finishWithMeasure {
 	
-	LAMeasure *measure = [[LAMeasure alloc] initWithAlcohol:_alcohol date:[NSDate date]];
+	BOOL measureIsAccurate = YES;
+	if (_protocolVersion == LAConnectProtocolVersion_2)
+		measureIsAccurate = _finalPressureIsSufficient;
+	
+	LAMeasure *measure = [[LAMeasure alloc] initWithAlcohol:_alcohol date:[NSDate date] isAccurate:measureIsAccurate];
 	[self.delegate sessionDidFinishWithMeasure:measure];
 }
 
