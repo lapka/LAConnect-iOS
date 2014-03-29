@@ -352,7 +352,9 @@ typedef enum {
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
 	
 	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidFinishSessionWithError object:error];
-	[self updateWithState:LAConnectManagerStateRespite];
+	
+	LAConnectManagerState nextState = (error.code == LAErrorCodeSessionDidFalseStart) ? LAConnectManagerStateOff : LAConnectManagerStateRespite;
+	[self updateWithState:nextState];
 	self.session = nil;
 }
 
