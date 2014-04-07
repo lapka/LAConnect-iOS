@@ -8,9 +8,9 @@
 
 #define minAcceptablePressure 3.0
 #define maxAcceptablePressure 6.0
-#define missedMessageDelay 0.3
-#define maxAcceptableMissedMessagesInARow 10
 #define finishTime 10.0
+
+#define framesPerDeviceIDParts 3
 
 #define battery_level_info_byte_start_index 4
 #define battery_level_bits_count 4
@@ -23,19 +23,15 @@
 #define word16_length 16
 #define word32_length 32
 
+
 NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidRecieveSessionEvent";
 
 
-@interface LASession ()
-@property (strong) NSTimer *everySecondTimer;
-@property (strong) NSTimer *missedMessageTimer;
-@property (strong) NSDate *startTime;
-@property int missedMessagesInARow;
-
-@end
-
-
 @implementation LASession
+
+
+#pragma mark -
+#pragma mark Lifecycle
 
 
 - (id)init {
@@ -45,8 +41,12 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 		_alcohol = 0;
 		_pressure = 0;
 		_duration = 0;
+		_framesSinceStart = 0;
+		_framesFrequency = 10;
 		
-		_missedMessagesInARow = 0;
+		_protocolVersion = LAConnectProtocolVersionUnknown;
+		_compositeDeviceID = [LADeviceID new];
+		_finalPressureIsSufficient = NO;
 	}
 	return self;
 }
@@ -57,39 +57,63 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 }
 
 
+
+
+#pragma mark -
+#pragma mark Start / Finish
+
+
 - (void)start {
 	NSLog(@"LASession start");
-	
-	[self scheduleTimers];
-	self.startTime = [NSDate date];
-	
 	[self.delegate sessionDidStart];
 }
 
 
-- (void)stop {
-	NSLog(@"LASession stop");
-	
-	[self invalidateTimers];
+- (void)cancel {
+	NSLog(@"LASession cancel");
+	[self.delegate sessionDidCancel];
 }
 
 
-- (void)updateWithCountdown:(float)countdown {
+- (void)finishWithMeasure {
 	
-	[self updateDuration];
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
+	BOOL measureIsAccurate = YES;
+	if (_protocolVersion == LAConnectProtocolVersion_2)
+		measureIsAccurate = _finalPressureIsSufficient;
 	
-	_countdown = countdown;
-	[self.delegate sessionDidUpdateCountdown];
+	LAMeasure *measure = [[LAMeasure alloc] initWithAlcohol:_alcohol date:[NSDate date] isAccurate:measureIsAccurate];
+	[self.delegate sessionDidFinishWithMeasure:measure];
 }
+
+
+- (void)finishWithDeviceID {
+	
+	[self.delegate sessionDidFinishWithDeviceID];
+}
+
+
+- (void)finishWithLowBlowError {
+	
+	LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeFinalPressureBelowAcceptableThreshold userInfo:nil];
+	[self finishWithError:error];
+}
+
+
+- (void)finishWithError:(LAError *)error {
+	printf("\n");
+	NSLog(@"LASession finishWithError: %@", [error localizedDescription]);
+	
+	[self.delegate sessionDidFinishWithError:error];
+}
+
+
+
+
+#pragma mark -
+#pragma mark Update
 
 
 - (void)updateWithPressure:(int)pressure {
-	
-	[self updateDuration];
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
 	
 	_pressure = pressure;
 	[self.delegate sessionDidUpdatePressure];
@@ -98,135 +122,140 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 
 - (void)updateWithRawAlcohol:(int)rawAlcohol {
 	
-	[self updateDuration];
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
-	
 	_rawAlcohol = rawAlcohol;
 	_alcohol = [self bacValueFromRawAlcohol:rawAlcohol withPressure:_pressure];
 	[self.delegate sessionDidUpdateAlcohol];
-	
-	[self finishWithMeasure];
 }
 
 
 - (void)updateWithDeviceID:(int)deviceID {
 	
-	[self updateDuration];
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
-	
 	_deviceID = deviceID;
 	[self.delegate sessionDidUpdateDeviceID];
-	
-	[self finishWithDeviceID];
 }
 
 
-- (void)updateWithShortDeviceID:(int)shortDeviceID {
+- (void)updateWithDeviceIDPart:(BIT_ARRAY *)deviceIDPart {
 	
-	[self updateDuration];
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
+	LADeviceIDPartDescription partDescription = [self deviceIDPartDescriptionForFramesSinceStart:_framesSinceStart];
+	printf("\n{%d,%d}\n", partDescription.deviceIDIndex, partDescription.partIndex);
+	[_compositeDeviceID addDeviceIDPart:deviceIDPart withPartDescription:partDescription];
+	[self.delegate sessionDidUpdateDeviceIDPart:deviceIDPart];
 	
-	_shortDeviceID = shortDeviceID;
-	[self.delegate sessionDidUpdateShortDeviceID];
+	if (_compositeDeviceID.isComplete) {
+		printf("\nCompositeDeviceID is complete\n\n%s\n\n", _compositeDeviceID.description.UTF8String);
+		if (_compositeDeviceID.isCoincided) {
+			[self updateWithDeviceID:_compositeDeviceID.intValue];
+		}
+	}
 }
 
 
 - (void)updateWithBatteryLevel:(int)batteryLevel {
-	
-	[self updateDuration];
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow = 0;
 	
 	_batteryLevel = batteryLevel;
 	[self.delegate sessionDidUpdateBatteryLevel];
 }
 
 
-- (void)everySecondTick {
+- (void)updateWithProtocolVersion:(LAConnectProtocolVersion)protocolVersion {
+	
+	if (protocolVersion == _protocolVersion) return;
+	
+	_protocolVersion = protocolVersion;
+	[self.delegate sessionDidUpdateProtocolVersion];
+}
+
+
+- (void)updateWithFinalPressureFlag:(BOOL)finalPressureIsSufficient {
+	
+	_finalPressureIsSufficient = finalPressureIsSufficient;
+	[self.delegate sessionDidUpdateFinalPressureFlag];
+}
+
+
+- (void)incrementFramesCounter {
+	
+	_framesSinceStart++;
 	[self updateDuration];
+	[self checkIfStillValid];
 }
 
 
 - (void)updateDuration {
-	_duration = [[NSDate date] timeIntervalSinceDate:self.startTime];
+	_duration = _framesSinceStart / _framesFrequency;
+	[self.delegate sessionDidUpdateDuration];
 }
 
 
-- (void)finishWithMeasure {
+
+
+#pragma mark -
+#pragma mark Session Validation
+
+
+- (void)checkIfStillValid {
 	
-	[self invalidateTimers];
-	
-	LAMeasure *measure = [[LAMeasure alloc] initWithAlcohol:_alcohol date:[NSDate date]];
-	[self.delegate sessionDidFinishWithMeasure:measure];
-}
-
-
-- (void)finishWithDeviceID {
-	
-	[self invalidateTimers];
-	[self.delegate sessionDidFinishWithDeviceID];
-}
-
-
-- (void)finishWithError:(LAError *)error {
-	printf("\n");
-	NSLog(@"LASession finishWithError: %@", [error localizedDescription]);
-	
-	[self invalidateTimers];
-	[self.delegate sessionDidFinishWithError:error];
-}
-
-
-#pragma mark - Timers
-
-
-- (void)scheduleTimers {
-	
-	self.everySecondTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(everySecondTick) userInfo:nil repeats:YES];
-}
-
-
-- (void)invalidateTimers {
-	
-	[self.everySecondTimer invalidate];
-	[self.missedMessageTimer invalidate];
-	
-	self.everySecondTimer = nil;
-	self.missedMessageTimer = nil;
-}
-
-
-#pragma mark - Missed Message Timer
-
-
-- (void)restartMissedMessageTimer {
-	
-	[self.missedMessageTimer invalidate];
-	self.missedMessageTimer = [NSTimer scheduledTimerWithTimeInterval:missedMessageDelay target:self selector:@selector(handleMissedMessage) userInfo:nil repeats:NO];
-}
-
-
-- (void)handleMissedMessage {
-	
-	[self updateDuration];
-	[self restartMissedMessageTimer];
-	_missedMessagesInARow++;
-	
-	NSString *description = [NSString stringWithFormat:@"Missed message (%d)", _missedMessagesInARow];
-	LASessionEvent *event = [LASessionEvent eventWithDescription:description time:_duration];
-	[[NSNotificationCenter defaultCenter] postNotificationName:ConnectManagerDidRecieveSessionEvent object:event];
-	
-	if (_missedMessagesInARow > maxAcceptableMissedMessagesInARow) {
-		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeMoreMissedMessagesThenAcceptable userInfo:nil];
+	if (![self isStartConfirmed]) {
+		
+		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeSessionDidFalseStart userInfo:nil];
+		[self finishWithError:error];
+		
+	} else if ([self isMissedFinalMessage]) {
+		
+		LAError *error = [[LAError alloc] initWithDomain:@"com.mylapka.bam" code:LAErrorCodeSessionDidMissFinish userInfo:nil];
 		[self finishWithError:error];
 	}
 }
 
 
-#pragma mark - Utilities
+- (BOOL)isStartConfirmed {
+	
+	BOOL confirmed = YES;
+	
+	int onePartReceived = 1;
+	int maximumFramesToReceiveThirdDeviceIDPart = 10;
+	if (_compositeDeviceID.receivedPartsCount <= onePartReceived && _framesSinceStart > maximumFramesToReceiveThirdDeviceIDPart) {
+		confirmed = NO;
+	}
+	
+	return confirmed;
+}
+
+
+- (BOOL)isMissedFinalMessage {
+	
+	int framesPerShortMessage = 3;
+	int framesPerLongMessage = 9;
+	int maxShortMessagesDeviceCanSend = 13;
+	int safeFramesBuffer = 2;
+	
+	int maxFramesToReceiveThirdFinalMessage = 3 * framesPerLongMessage + maxShortMessagesDeviceCanSend * framesPerShortMessage + safeFramesBuffer;
+	int maxFramesToReceiveFifthFinalMessage = 5 * framesPerLongMessage + maxShortMessagesDeviceCanSend * framesPerShortMessage + safeFramesBuffer;
+	
+	int maxFramesSinceStart = (_protocolVersion == LAConnectProtocolVersion_2) ? maxFramesToReceiveThirdFinalMessage : maxFramesToReceiveFifthFinalMessage;
+	
+	BOOL isSessionMissedFinalMessage = (_framesSinceStart > maxFramesSinceStart);
+	return isSessionMissedFinalMessage;
+}
+
+
+
+
+#pragma mark -
+#pragma mark Protocol Version
+
+
+- (BOOL)protocolVersionIsRecognized {
+	
+	return (_protocolVersion != LAConnectProtocolVersionUnknown);
+}
+
+
+
+
+#pragma mark -
+#pragma mark Utilities
 
 
 - (float)bacValueFromRawAlcohol:(int)rawAlcohol withPressure:(int)pressure {
@@ -241,6 +270,19 @@ NSString *const ConnectManagerDidRecieveSessionEvent = @"ConnectManagerDidReciev
 	
 	float alcoholInBAC = alcoholInPromille / 10;
 	return alcoholInBAC;
+}
+
+
+- (LADeviceIDPartDescription)deviceIDPartDescriptionForFramesSinceStart:(float)framesSinceStart {
+	
+	int deviceIDPartsSinceStart = round(framesSinceStart / framesPerDeviceIDParts);
+	int partIndexSinceStart = deviceIDPartsSinceStart - 1;
+	
+	LADeviceIDPartDescription partDescription;
+	partDescription.partIndex = partIndexSinceStart % deviceIDPartsPerID;
+	partDescription.deviceIDIndex = floor(partIndexSinceStart / deviceIDPartsPerID);
+	
+	return partDescription;
 }
 
 

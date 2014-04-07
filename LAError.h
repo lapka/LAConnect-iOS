@@ -10,7 +10,9 @@
 
 
 typedef enum {
-	LAErrorCodeMoreMissedMessagesThenAcceptable
+	LAErrorCodeSessionDidFalseStart,
+	LAErrorCodeSessionDidMissFinish,
+	LAErrorCodeFinalPressureBelowAcceptableThreshold,
 } LAErrorCode;
 
 

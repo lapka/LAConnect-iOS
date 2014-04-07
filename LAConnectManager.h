@@ -13,8 +13,8 @@ extern NSString *const ConnectManagerDidUpdateState;
 extern NSString *const ConnectManagerDidFinishSessionWithMeasure;
 extern NSString *const ConnectManagerDidFinishSessionWithDeviceID;
 extern NSString *const ConnectManagerDidFinishSessionWithError;
+extern NSString *const ConnectManagerDidUpdateSessionDuration;
 extern NSString *const ConnectManagerDidUpdateBatteryLevel;
-extern NSString *const ConnectManagerDidUpdateCountdown;
 extern NSString *const ConnectManagerDidUpdatePressure;
 
 

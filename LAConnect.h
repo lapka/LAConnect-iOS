@@ -10,3 +10,4 @@
 #include "LASession.h"
 #include "LAError.h"
 #include "LASessionEvent.h"
+#include "LADeviceID.h"
