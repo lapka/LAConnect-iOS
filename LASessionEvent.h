@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 @interface LASessionEvent : NSObject
-@property (strong) NSString *description;
+@property (strong) NSString *eventDescription;
 @property float time;
 
 + (LASessionEvent *)eventWithDescription:(NSString *)description time:(float)time;

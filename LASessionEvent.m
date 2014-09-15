@@ -12,7 +12,7 @@
 
 + (LASessionEvent *)eventWithDescription:(NSString *)description time:(float)time {
 	LASessionEvent *event = [LASessionEvent new];
-	event.description = description;
+	event.eventDescription = description;
 	event.time = time;
 	return event;
 }
